@@ -1,5 +1,8 @@
-﻿namespace API.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace API.Models
 {
+    [Table("tb_m_educations")]
     public class Education : GeneralModel
     {
         /*Guid -> Global Unique Identifier
@@ -13,10 +16,18 @@
          * Int sbg primary key cukup berbahaya. Di JSON perlu id yang ditampilkan. 
          * Dikhawatirkan ketika data terekspose, dan hacker bisa menebak data selanjutnya (Bruteforce).
          */
+        [Column("major", TypeName = "nvarchar(100)")]
         public string Major {  get; set; }
+        [Column("degree", TypeName = "nvarchar(100)")]
         public string Degree { get; set; }
+        [Column("gpa")]
         public float Gpa {  get; set; }
+        [Column("university_guid", TypeName = "uniqueidentifier")]
         public Guid UniversityGuid {  get; set; }
 
+        //Cardinality
+        public University? University { get; set; }
+
+        public Employee? Employee { get; set; }
     }
 }
