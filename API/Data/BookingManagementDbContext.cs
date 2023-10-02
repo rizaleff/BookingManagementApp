@@ -41,9 +41,9 @@ namespace API.Data
 
             //One education has one employee
             modelBuilder.Entity<Education>()
-                .HasOne(e => e.Employee)
-                .WithOne(e => e.Education)
-                .HasForeignKey<Employee>(e => e.Guid);
+                .HasOne(em => em.Employee)
+                .WithOne(ed => ed.Education)
+                .HasForeignKey<Education>(em => em.Guid);
 
             //One Account has one Employee
             modelBuilder.Entity<Account>()
