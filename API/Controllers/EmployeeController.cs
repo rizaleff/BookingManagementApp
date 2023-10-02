@@ -52,7 +52,7 @@ public class EmployeeController : ControllerBase
         return Ok(result);
     }
 
-    [HttpDelete("{guid}")]
+    [HttpDelete]
     public IActionResult Delete(Guid guid)
     {
         var employeeByGuid = _employeeRepository.GetByGuid(guid);
@@ -68,10 +68,10 @@ public class EmployeeController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPut("{guid}")]
-    public IActionResult UpdateByGuid(Guid guid, Employee employee)
+    [HttpPut]
+    public IActionResult UpdateByGuid(Employee employee)
     {
-        var employeeByGuid = _employeeRepository.GetByGuid(guid);
+        var employeeByGuid = _employeeRepository.GetByGuid(employee.Guid);
         if (employeeByGuid is null)
         {
             return NotFound("ID Not Found");

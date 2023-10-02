@@ -26,7 +26,7 @@ public class BookingController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{guid}")]
+    [HttpGet]
     public IActionResult GetByGuid(Guid guid)
     {
         var result = _bookingRepository.GetByGuid(guid);
@@ -52,7 +52,7 @@ public class BookingController : ControllerBase
         return Ok(result);
     }
 
-    [HttpDelete("{guid}")]
+    [HttpDelete]
     public IActionResult Delete(Guid guid)
     {
         var bookingByGuid = _bookingRepository.GetByGuid(guid);
@@ -68,10 +68,10 @@ public class BookingController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPut("{guid}")]
-    public IActionResult UpdateByGuid(Guid guid, Booking booking)
+    [HttpPut]
+    public IActionResult UpdateByGuid(Booking booking)
     {
-        var bookingByGuid = _bookingRepository.GetByGuid(guid);
+        var bookingByGuid = _bookingRepository.GetByGuid(booking.Guid);
         if (bookingByGuid is null)
         {
             return NotFound("ID Not Found");

@@ -53,7 +53,7 @@ public class EducationController : ControllerBase
         return Ok(result);
     }
 
-    [HttpDelete("{guid}")]
+    [HttpDelete]
     public IActionResult Delete(Guid guid)
     {
         var educationById = _educationRepository.GetByGuid(guid);
@@ -69,10 +69,10 @@ public class EducationController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPut("{guid}")]
-    public IActionResult Update(Guid guid, Education education)
+    [HttpPut]
+    public IActionResult Update(Education education)
     {
-        var educationById = _educationRepository.GetByGuid(guid);
+        var educationById = _educationRepository.GetByGuid(education.Guid);
         if (educationById is null)
         {
             return NotFound("ID Not Found");

@@ -52,7 +52,7 @@ public class AccountRoleController : ControllerBase
         return Ok(result);
     }
 
-    [HttpDelete("{guid}")]
+    [HttpDelete]
     public IActionResult Delete(Guid guid)
     {
         var accountRoleByGuid = _accountRoleRepository.GetByGuid(guid);
@@ -68,10 +68,10 @@ public class AccountRoleController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPut("{guid}")]
-    public IActionResult UpdateByGuid(Guid guid, AccountRole accountRole)
+    [HttpPut]
+    public IActionResult UpdateByGuid(AccountRole accountRole)
     {
-        var accountRoleByGuid = _accountRoleRepository.GetByGuid(guid);
+        var accountRoleByGuid = _accountRoleRepository.GetByGuid(accountRole.Guid);
         if (accountRoleByGuid is null)
         {
             return NotFound("ID Not Found");

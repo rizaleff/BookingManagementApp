@@ -52,7 +52,7 @@ public class RoomController : ControllerBase
         return Ok(result);
     }
 
-    [HttpDelete("{guid}")]
+    [HttpDelete]
     public IActionResult Delete(Guid guid)
     {
         var roomByGuid = _roomRepository.GetByGuid(guid);
@@ -68,10 +68,10 @@ public class RoomController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPut("{guid}")]
-    public IActionResult UpdateByGuid(Guid guid, Room room)
+    [HttpPut]
+    public IActionResult UpdateByGuid(Room room)
     {
-        var roomByGuid = _roomRepository.GetByGuid(guid);
+        var roomByGuid = _roomRepository.GetByGuid(room.Guid);
         if (roomByGuid is null)
         {
             return NotFound("ID Not Found");
