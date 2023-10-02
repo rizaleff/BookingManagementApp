@@ -26,7 +26,7 @@ public class BookingController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet]
+    [HttpGet("{guid}")]
     public IActionResult GetByGuid(Guid guid)
     {
         var result = _bookingRepository.GetByGuid(guid);
