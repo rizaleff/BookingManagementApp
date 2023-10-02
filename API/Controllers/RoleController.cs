@@ -41,6 +41,7 @@ public class RoleController : ControllerBase
     public IActionResult Create(Role role)
     {
         role.CreatedDate = DateTime.Now;
+        role.ModifiedDate = role.CreatedDate;
 
         var result = _roleRepository.Create(role);
         if (result is null)

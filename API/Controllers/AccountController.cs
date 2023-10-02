@@ -41,6 +41,7 @@ public class AccountController : ControllerBase
     public IActionResult Create(Account account)
     {
         account.CreatedDate = DateTime.Now;
+        account.ModifiedDate = account.CreatedDate;
 
         var result = _accountRepository.Create(account);
         if (result is null)

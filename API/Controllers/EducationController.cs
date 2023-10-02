@@ -41,6 +41,9 @@ public class EducationController : ControllerBase
     [HttpPost]
     public IActionResult Create(Education education)
     {
+        education.CreatedDate = DateTime.Now;
+        education.ModifiedDate = education.CreatedDate;
+
         var result = _educationRepository.Create(education);
         if (result is null)
         {

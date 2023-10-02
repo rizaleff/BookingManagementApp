@@ -41,6 +41,7 @@ public class RoomController : ControllerBase
     public IActionResult Create(Room room)
     {
         room.CreatedDate = DateTime.Now;
+        room.ModifiedDate = room.CreatedDate;
 
         var result = _roomRepository.Create(room);
         if (result is null)

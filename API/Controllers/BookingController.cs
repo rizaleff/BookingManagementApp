@@ -41,6 +41,7 @@ public class BookingController : ControllerBase
     public IActionResult Create(Booking booking)
     {
         booking.CreatedDate = DateTime.Now;
+        booking.ModifiedDate = booking.CreatedDate;
 
         var result = _bookingRepository.Create(booking);
         if (result is null)

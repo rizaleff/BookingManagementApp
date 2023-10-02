@@ -41,6 +41,7 @@ public class EmployeeController : ControllerBase
     public IActionResult Create(Employee employee)
     {
         employee.CreatedDate = DateTime.Now;
+        employee.ModifiedDate = employee.CreatedDate;
 
         var result = _employeeRepository.Create(employee);
         if (result is null)

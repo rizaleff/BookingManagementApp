@@ -1,5 +1,6 @@
 using API.Contracts;
 using API.Data;
+using API.Repositorie;
 using API.Repositories;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,6 +13,14 @@ builder.Services.AddDbContext<BookingManagementDbContext>(option => option.UseSq
 // Add repositories to the container.
 builder.Services.AddScoped<IUniversityRepository, UniversityRepository>();
 builder.Services.AddScoped<IEducationRepository, EducationRepository>();
+builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+builder.Services.AddScoped<IAccountRoleRepository, AccountRoleRepository>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IRoomRepository, RoomRepository>();
+
+
 
 builder.Services.AddControllers();
 

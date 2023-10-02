@@ -1,5 +1,7 @@
+
 ﻿using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
 
 namespace API.Models
 {
@@ -24,8 +26,6 @@ namespace API.Models
         public string Email { get; set; }
         [Column("phone_number", TypeName = "nvarchar(50)")]
         public string PhoneNumber { get; set; }
-
-
         public Education? Education { get; set; }
 
         public Account? Account { get; set; }

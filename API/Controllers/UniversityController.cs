@@ -41,6 +41,9 @@ public class UniversityController : ControllerBase
     [HttpPost]
     public IActionResult Create(University university)
     {
+        university.CreatedDate = DateTime.Now;
+        university.ModifiedDate = university.CreatedDate;
+
         var result = _universityRepository.Create(university);
         if (result is null)
         {
@@ -76,6 +79,7 @@ public class UniversityController : ControllerBase
         }
         universityById.Code = university.Code;
         universityById.Name = university.Name;
+        universityById.ModifiedDate = DateTime.Now;
         var result = _universityRepository.Update(universityById);
         if (!result)
         {
