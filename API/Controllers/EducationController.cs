@@ -66,10 +66,10 @@ public class EducationController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPut]
-    public IActionResult Update(Education education)
+    [HttpPut("{guid}")]
+    public IActionResult Update(Guid guid, Education education)
     {
-        var educationById = _educationRepository.GetByGuid(education.Guid);
+        var educationById = _educationRepository.GetByGuid(guid);
         if (educationById is null)
         {
             return NotFound("ID Not Found");
