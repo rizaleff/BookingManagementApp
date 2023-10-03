@@ -1,12 +1,17 @@
 ﻿using API.Contracts;
+using API.DTOs.Rooms;
 using API.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
-[ApiController]
-[Route("api/[controller]")]
+
+[ApiController] //Menandadakan bahwa kelas ini merupakan sebuah controller API
+[Route("api/[controller]")] //format route dari tiap endpoint pada controller ini
+
+//Deklarasi kelas RoomController yang merupakan turunan dari kelas ControllerBase
 public class RoomController : ControllerBase
 {
+    //sebagai perantara untuk melakukan CRUD melalui contract yang telah dibuat
     private readonly IRoomRepository _roomRepository;
 
     public RoomController(IRoomRepository roomRepository)
@@ -14,18 +19,30 @@ public class RoomController : ControllerBase
         _roomRepository = roomRepository;
     }
 
+    /*
+     *<summary>request HTTP GET untuk mendpatkan data dari semua Room</summary>
+     *<returns>return value berupa status HTTP response status codes</returns> 
+     */
     [HttpGet]
     public IActionResult GetAll()
     {
+        //Mendapatkan data Room dan disimpan pada variabel result
         var result = _roomRepository.GetAll();
         if (!result.Any())
         {
             return NotFound("Data Not Found");
         }
 
-        return Ok(result);
+        //mapping setiap item variabel result ke dalam object dari kelas RoomDto menggunakan explicit operator
+        var data = result.Select(x => (RoomDto)x);
+        return Ok(data);
     }
 
+    /*
+     *<summary>request HTTP GET untuk mendpatkan data berdasarkan Guid yang dimasukkan pada parameter</summary>
+     *<param name="guid">guid yang didapatkan dari path</param>
+     *<returns>return value berupa status HTTP response status codes</returns> 
+     */
     [HttpGet("{guid}")]
     public IActionResult GetByGuid(Guid guid)
     {
@@ -34,24 +51,35 @@ public class RoomController : ControllerBase
         {
             return NotFound("Id Not Found");
         }
-        return Ok(result);
+        //mapping variabel result ke RoomDto menggunakan explicit operator
+        return Ok((RoomDto)result);
     }
 
+    /*
+     *<summary>request HTTP POST untuk menambahkan Room baru</summary>
+     *<param name="createRoomDto">Data yang akan ditambahkan, didapatkan dari request body</param>
+     *<returns>return value berupa status HTTP response status codes</returns> 
+     */
     [HttpPost]
-    public IActionResult Create(Room room)
+    public IActionResult Create(CreateRoomDto createRoomDto)
     {
-        room.CreatedDate = DateTime.Now;
-        room.ModifiedDate = room.CreatedDate;
 
-        var result = _roomRepository.Create(room);
+        //Mapping secara implisit pada createRoomDto untuk dijadikan objek Room
+        var result = _roomRepository.Create(createRoomDto);
         if (result is null)
         {
             return BadRequest("Failed to create data");
         }
 
-        return Ok(result);
+        //Mapping variabel result ke RoomDto menggunakan explicit operator
+        return Ok((RoomDto)result);
     }
 
+    /*
+     *<summary>request HTTP DELETE untuk menambahkan menghapus data berdasarkan Guid</summary>
+     *<param name="guid">Guid dari data yang akan dihapus, didapatkan dari request body</param>
+     *<returns>return value berupa status HTTP response status codes</returns> 
+     */
     [HttpDelete]
     public IActionResult Delete(Guid guid)
     {
@@ -65,30 +93,37 @@ public class RoomController : ControllerBase
         {
             return BadRequest("Failed to delete data");
         }
-        return Ok(result);
+        return Ok("Data Deleted");
     }
 
+    /*
+     *<summary>request HTTP PUT untuk melakukan perubahan data Room </summary>
+     *<param name="roomDto">Data yang akan dijadikan perubahan, didapatkan dari request body</param>
+     *<returns>return value berupa status HTTP response status codes</returns> 
+     */
     [HttpPut]
-    public IActionResult UpdateByGuid(Room room)
+    public IActionResult UpdateByGuid(RoomDto roomDto)
     {
-        var roomByGuid = _roomRepository.GetByGuid(room.Guid);
+        var roomByGuid = _roomRepository.GetByGuid(roomDto.Guid);
         if (roomByGuid is null)
         {
             return NotFound("ID Not Found");
         }
-        roomByGuid.Name = room.Name;
-        roomByGuid.Floor = room.Floor;
-        roomByGuid.Capacity = room.Capacity;
 
-        roomByGuid.ModifiedDate = DateTime.Now;
+        //Mendapatkan data Room berdasarkan guid
+        Room toUpdate = roomDto;
+        
+        //Inisialiasi nilai CreatedDate agar tidak ada perubahan dari data awal
+        toUpdate.CreatedDate = roomByGuid.CreatedDate;
 
-        var result = _roomRepository.Update(roomByGuid);
+        //Melakukan Update dengan parameter toUpdate
+        var result = _roomRepository.Update(toUpdate);
         if (!result)
         {
             return BadRequest("Failed to Update Date");
 
         }
-        return Ok(result);
+        return Ok("Data Updated");
     }
 
 }

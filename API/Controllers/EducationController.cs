@@ -1,13 +1,17 @@
 ﻿using API.Contracts;
+using API.DTOs.Educations;
 using API.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
+[ApiController] //Menandadakan bahwa kelas ini merupakan sebuah controller API
+[Route("api/[controller]")] //format route dari tiap endpoint pada controller ini
+
+//Deklarasi kelas EducationController yang merupakan turunan dari kelas ControllerBase
 public class EducationController : ControllerBase
 {
+    //sebagai perantara untuk melakukan CRUD melalui contract yang telah dibuat
     private readonly IEducationRepository _educationRepository;
 
     public EducationController(IEducationRepository educationRepository)
@@ -15,18 +19,31 @@ public class EducationController : ControllerBase
         _educationRepository = educationRepository;
     }
 
+    /*
+     *<summary>request HTTP GET untuk mendpatkan data dari semua Education</summary>
+     *<returns>return value berupa status HTTP response status codes</returns> 
+     */
     [HttpGet]
     public IActionResult GetAll()
     {
+        //Mendapatkan data Education dan disimpan pada variabel result
         var result = _educationRepository.GetAll();
         if (!result.Any())
         {
             return NotFound("Data Not Found");
         }
 
-        return Ok(result);
+        //mapping setiap item variabel result ke dalam object dari kelas EducationDto menggunakan explicit operator
+        var data = result.Select(x => (EducationDto) x);
+
+        return Ok(data);
     }
 
+    /*
+     *<summary>request HTTP GET untuk mendpatkan data berdasarkan Guid yang dimasukkan pada parameter</summary>
+     *<param name="guid">guid yang didapatkan dari path<param>
+     *<returns>return value berupa status HTTP response status codes</returns> 
+     */
     [HttpGet("{guid}")]
     public IActionResult GetByGuid(Guid guid)
     {
@@ -35,24 +52,35 @@ public class EducationController : ControllerBase
         {
             return NotFound("Id Not Found");
         }
-        return Ok(result);
+
+        //mapping variabel result ke EducationDto menggunakan explicit operator
+        return Ok((EducationDto)result);
     }
 
+    /*
+     *<summary>request HTTP POST untuk menambahkan Education baru</summary>
+     *<param name="createEducationDto">Data yang akan ditambahkan, didapatkan dari request body<param>
+     *<returns>return value berupa status HTTP response status codes</returns> 
+     */
     [HttpPost]
-    public IActionResult Create(Education education)
+    public IActionResult Create(CreateEducationDto createEducationDto)
     {
-        education.CreatedDate = DateTime.Now;
-        education.ModifiedDate = education.CreatedDate;
-
-        var result = _educationRepository.Create(education);
+        //Mapping secara implisit pada createEducationDto untuk dijadikan objek Education
+        var result = _educationRepository.Create(createEducationDto);
         if (result is null)
         {
             return BadRequest("Failed to create data");
         }
 
-        return Ok(result);
+        //Mapping variabel result ke EducationDto menggunakan explicit operator
+        return Ok((EducationDto)result);
     }
 
+    /*
+     *<summary>request HTTP DELETE untuk menambahkan menghapus data berdasarkan Guid</summary>
+     *<param name="guid">Guid dari data yang akan dihapus, didapatkan dari request body<param>
+     *<returns>return value berupa status HTTP response status codes</returns> 
+     */
     [HttpDelete]
     public IActionResult Delete(Guid guid)
     {
@@ -69,19 +97,26 @@ public class EducationController : ControllerBase
         return Ok(result);
     }
 
+    /*
+     *<summary>request HTTP PUT untuk melakukan perubahan data Education </summary>
+     *<param name="educationDto">Data yang akan dijadikan perubahan, didapatkan dari request body<param>
+     *<returns>return value berupa status HTTP response status codes</returns> 
+     */
     [HttpPut]
-    public IActionResult Update(Education education)
+    public IActionResult Update(EducationDto educationDto)
     {
-        var educationById = _educationRepository.GetByGuid(education.Guid);
+        //Mendapatkan data Education berdasarkan guid
+        var educationById = _educationRepository.GetByGuid(educationDto.Guid);
         if (educationById is null)
         {
             return NotFound("ID Not Found");
         }
-        educationById.Major = education.Major;
-        educationById.Degree = education.Degree;
-        educationById.Gpa = education.Gpa;
-        educationById.UniversityGuid = education.UniversityGuid;
-
+        
+        //Menyimpan data dari parameter ke dalam objek toUpdate, serta dilakukan mapping secara implisit
+        Education toUpdate = educationDto;
+        
+        //Inisialiasi nilai CreatedDate agar tidak ada perubahan dari data awal
+        toUpdate.ModifiedDate = DateTime.Now;
 
         var result = _educationRepository.Update(educationById);
         if (!result)

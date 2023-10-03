@@ -1,6 +1,7 @@
 ﻿using API.Contracts;
 using API.Data;
 using API.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Repositories
 {
@@ -19,7 +20,9 @@ namespace API.Repositories
 
         public TEntity GetByGuid(Guid guid)
         {
-            return _context.Set<TEntity> ().Find(guid);
+            var entity = _context.Set<TEntity>().Find(guid);
+            _context.ChangeTracker.Clear();
+            return entity;
         }
 
         public TEntity Create(TEntity entity)
@@ -39,7 +42,7 @@ namespace API.Repositories
         {
             try
             {
-                _context.Set<TEntity> ().Update(entity);
+                _context.Set<TEntity>().Update(entity);
                 _context.SaveChanges();
                 return true;
             }

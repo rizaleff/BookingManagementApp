@@ -1,13 +1,18 @@
 ﻿using API.Contracts;
+using API.DTOs;
+using API.DTOs.Universities;
 using API.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
+[ApiController] //Menandadakan bahwa kelas ini merupakan sebuah controller API
+[Route("api/[controller]")] //format route dari tiap endpoint pada controller ini
+
+//Deklarasi kelas UniversityController yang merupakan turunan dari kelas ControllerBase
 public class UniversityController : ControllerBase
 {
+    //sebagai perantara untuk melakukan CRUD melalui contract yang telah dibuat
     private readonly IUniversityRepository _universityRepository;
 
     public UniversityController(IUniversityRepository universityRepository)
@@ -15,18 +20,31 @@ public class UniversityController : ControllerBase
         _universityRepository = universityRepository;
     }
 
+    /*
+    *<summary>request HTTP GET untuk mendpatkan data dari semua University</summary>
+    *<returns>return value berupa status HTTP response status codes</returns> 
+    */
     [HttpGet]
     public IActionResult GetAll()
     {
+        //Mendapatkan data University dan disimpan pada variabel result
         var result = _universityRepository.GetAll();
         if (!result.Any())
         {
             return NotFound("Data Not Found");
         }
+        //mapping setiap item variabel result ke dalam object dari kelas UniversityDto menggunakan explicit operator
+        var data = result.Select(x => (UniversityDto)x);
 
-        return Ok(result);
+
+        return Ok(data);
     }
 
+    /*
+     *<summary>request HTTP GET untuk mendpatkan data berdasarkan Guid yang dimasukkan pada parameter</summary>
+     *<param name="guid">guid yang didapatkan dari path</param>
+     *<returns>return value berupa status HTTP response status codes</returns> 
+     */
     [HttpGet("{guid}")]
     public IActionResult GetByGuid(Guid guid)
     {
@@ -35,24 +53,34 @@ public class UniversityController : ControllerBase
         {
             return NotFound("Id Not Found");
         }
-        return Ok(result);
+        //mapping variabel result ke UniversityDto menggunakan explicit operator
+        return Ok((UniversityDto)result);
     }
 
+    /*
+     *<summary>request HTTP POST untuk menambahkan University baru</summary>
+     *<param name="createUniversityDto">Data yang akan ditambahkan, didapatkan dari request body</param>
+     *<returns>return value berupa status HTTP response status codes</returns> 
+     */
     [HttpPost]
-    public IActionResult Create(University university)
+    public IActionResult Create(CreateUniversityDto universityDto)
     {
-        university.CreatedDate = DateTime.Now;
-        university.ModifiedDate = university.CreatedDate;
-
-        var result = _universityRepository.Create(university);
+        //Mapping secara implisit pada createUniversityDto untuk dijadikan objek University
+        var result = _universityRepository.Create(universityDto);
         if (result is null)
         {
             return BadRequest("Failed to create data");
         }
 
-        return Ok(result);
+        //Mapping variabel result ke UniversityDto menggunakan explicit operator
+        return Ok((UniversityDto)result);
     }
 
+    /*
+     *<summary>request HTTP DELETE untuk menambahkan menghapus data berdasarkan Guid</summary>
+     *<param name="guid">Guid dari data yang akan dihapus, didapatkan dari request body</param>
+     *<returns>return value berupa status HTTP response status codes</returns> 
+     */
     [HttpDelete]
     public IActionResult Delete(Guid guid)
     {
@@ -66,26 +94,36 @@ public class UniversityController : ControllerBase
         {
             return BadRequest("Failed to delete data");
         }
-        return Ok(result);
+        return Ok("Data Deleted");
     }
 
+    /*
+     *<summary>request HTTP PUT untuk melakukan perubahan data University </summary>
+     *<param name="universityDto">Data yang akan dijadikan perubahan, didapatkan dari request body</param>
+     *<returns>return value berupa status HTTP response status codes</returns> 
+     */
     [HttpPut]
-    public IActionResult UpdateByGuid(University university)
+    public IActionResult UpdateByGuid(UniversityDto universityDto)
     {
-        var universityById = _universityRepository.GetByGuid(university.Guid);
+        //Mendapatkan data University berdasarkan guid
+        var universityById = _universityRepository.GetByGuid(universityDto.Guid);
         if (universityById is null)
         {
             return NotFound("ID Not Found");
         }
-        universityById.Code = university.Code;
-        universityById.Name = university.Name;
-        universityById.ModifiedDate = DateTime.Now;
-        var result = _universityRepository.Update(universityById);
+        //Menyimpan data dari parameter ke dalam objek toUpdate, serta dilakukan mapping secara implisit
+        University toUpdate = universityDto;
+        
+        //Inisialiasi nilai CreatedDate agar tidak ada perubahan dari data awal
+        toUpdate.CreatedDate = universityById.CreatedDate;
+
+        //Melakukan Update dengan parameter toUpdate
+        var result = _universityRepository.Update(toUpdate);
         if (!result)
         {
             return BadRequest("Failed to Update Date");
 
         }
-        return Ok(result);
+        return Ok("Data Updated");
     }
 }
