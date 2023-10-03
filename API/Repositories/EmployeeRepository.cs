@@ -10,8 +10,8 @@ public class EmployeeRepository : GeneralRepository<Employee>, IEmployeeReposito
 
     public string GetLastNik()
     {
-        Employee employee = _context.Employees.OrderByDescending(e => e.Nik).FirstOrDefault();
+        Employee? employee = _context.Employees.OrderByDescending(e => e.Nik).FirstOrDefault();
 
-        return employee.Nik;
+        return employee?.Nik ?? "";
     }
 }

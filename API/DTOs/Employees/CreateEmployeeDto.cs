@@ -5,7 +5,6 @@ namespace API.DTOs.Employees;
 public class CreateEmployeeDto
 {
     //Deklarasi atribut yang dibutuhkan sebagai DTO
-    public string Nik { get; set; }
     public string FirstName { get; set; }
     public string LastName { get; set; }
     public DateTime BirthDate { get; set; }
@@ -23,7 +22,6 @@ public class CreateEmployeeDto
     {
         return new Employee
         {
-            Nik = createEmployeeDto.Nik,
             FirstName = createEmployeeDto.FirstName,
             LastName = createEmployeeDto.LastName,
             BirthDate = createEmployeeDto.BirthDate,
