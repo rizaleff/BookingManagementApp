@@ -1,6 +1,7 @@
 ﻿using API.Contracts;
 using API.DTOs.Accounts;
 using API.Models;
+using API.Utilities.Handlers;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
@@ -64,8 +65,12 @@ public class AccountController : ControllerBase
     [HttpPost]
     public IActionResult Create(CreateAccountDto createAccountDto)
     {
+        //Hashing
+        Account toCreate = createAccountDto;
+        toCreate.Password = HashingHandler.HashPassword(toCreate.Password);
+
         //Mapping secara implisit pada createAccountDto untuk dijadikan objek Account
-        var result = _accountRepository.Create(createAccountDto);
+        var result = _accountRepository.Create(toCreate);
         if (result is null)
         {
             return BadRequest("Failed to create data");
