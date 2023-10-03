@@ -1,7 +1,9 @@
 ﻿using API.Contracts;
 using API.DTOs.Employees;
 using API.Models;
+using API.Utilities.Handlers;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 [ApiController] //Menandadakan bahwa kelas ini merupakan sebuah controller API
@@ -63,8 +65,11 @@ public class EmployeeController : ControllerBase
     [HttpPost]
     public IActionResult Create(CreateEmployeeDto employeeDto)
     {
+        Employee toCreate = employeeDto;
+        toCreate.Nik = GenerateHandler.GenerateNik(_employeeRepository.GetLastNik()); //Generate Nik
+
         //Mapping secara implisit pada createEmployeeDto untuk dijadikan objek Employee
-        var result = _employeeRepository.Create(employeeDto);
+        var result = _employeeRepository.Create(toCreate);
         if (result is null)
         {
             return BadRequest("Failed to create data");
@@ -122,7 +127,7 @@ public class EmployeeController : ControllerBase
             return BadRequest("Failed to Update Date");
 
         }
-        return Ok(result);
+        return Ok("Data Updated");
     }
 
 }
