@@ -1,7 +1,9 @@
 ﻿using API.Contracts;
 using API.DTOs.Educations;
 using API.Models;
+using API.Utilities.Handlers;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 namespace API.Controllers;
 
@@ -30,13 +32,20 @@ public class EducationController : ControllerBase
         var result = _educationRepository.GetAll();
         if (!result.Any())
         {
-            return NotFound("Data Not Found");
+            //Mengembalikan nilai dengan response body berupa objek ResponseErrorHandler
+            return NotFound(new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status404NotFound, //Inisialisasi nilai atribut Code
+                Status = HttpStatusCode.NotFound.ToString(), //Inisialisai nilai atribut Status
+                Message = "Data Not Found" //Inisialisasi nilai atribut Message
+            });
         }
 
         //mapping setiap item variabel result ke dalam object dari kelas EducationDto menggunakan explicit operator
-        var data = result.Select(x => (EducationDto) x);
+        var data = result.Select(x => (EducationDto)x);
 
-        return Ok(data);
+        //Mengembalikan nilai berupa objek ResponseOKHandler dengan argument <IEnumerable<EducationDto>
+        return Ok(new ResponseOKHandler<IEnumerable<EducationDto>>(data));
     }
 
     /*
@@ -47,14 +56,24 @@ public class EducationController : ControllerBase
     [HttpGet("{guid}")]
     public IActionResult GetByGuid(Guid guid)
     {
+        //Mendapatkan data Education berdasrkan Gui dan disimpan pada variabel result
         var result = _educationRepository.GetByGuid(guid);
+        
+        //Mengecek apakah variabel result bernilai null
         if (result is null)
         {
-            return NotFound("Id Not Found");
+            //Mengembalikan nilai dengan response body berupa objek ResponseErrorHandler
+            return NotFound(new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status404NotFound, //Inisialisasi nilai atribut Code
+                Status = HttpStatusCode.NotFound.ToString(), //Inisialisai nilai atribut Status
+                Message = "Data Not Found" //Inisialisasi nilai atribut Message
+            });
         }
 
         //mapping variabel result ke EducationDto menggunakan explicit operator
-        return Ok((EducationDto)result);
+        //Mengembalikan nilai berupa response OK dengan response body berupa objek ResponseOKHandler
+        return Ok(new ResponseOKHandler<EducationDto>((EducationDto)result));
     }
 
     /*
@@ -65,15 +84,26 @@ public class EducationController : ControllerBase
     [HttpPost]
     public IActionResult Create(CreateEducationDto createEducationDto)
     {
-        //Mapping secara implisit pada createEducationDto untuk dijadikan objek Education
-        var result = _educationRepository.Create(createEducationDto);
-        if (result is null)
+        try
         {
-            return BadRequest("Failed to create data");
-        }
+            //Mapping secara implisit pada createEducationDto untuk dijadikan objek Education
+            var result = _educationRepository.Create(createEducationDto);
 
-        //Mapping variabel result ke EducationDto menggunakan explicit operator
-        return Ok((EducationDto)result);
+            //Mapping variabel result ke EducationDto menggunakan explicit operator
+            //Mengembalikan nilai berupa response OK dengan response body berupa objek ResponseOKHandler
+            return Ok(new ResponseOKHandler<EducationDto>((EducationDto)result));
+        }
+        catch (ExceptionHandler ex)
+        {
+            //Mengembalikan nilai dengan response body berupa objek ResponseErrorHandler
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status500InternalServerError,//Inisialisasi atribut Code dengan nilai 500
+                Status = HttpStatusCode.InternalServerError.ToString(), //Inisialisasi atribut Status dengan nilai InternalServerError
+                Message = "Failed to Create Data", //Inisialisasi nilai atribut Message
+                Error = ex.Message  //Inisialisasi nilai atribut Error berupa Message dari ExceptionHandler
+            });
+        }
     }
 
     /*
@@ -84,17 +114,40 @@ public class EducationController : ControllerBase
     [HttpDelete]
     public IActionResult Delete(Guid guid)
     {
-        var educationById = _educationRepository.GetByGuid(guid);
-        if (educationById is null)
+        try
         {
-            return NotFound("ID Not Found");
+            //Mendapatkan data Education berdasrkan Guid dan disimpan pada variabel educationById
+            var educationById = _educationRepository.GetByGuid(guid);
+
+            //Mengecek apakah educationById bernilai null
+            if (educationById is null)
+            {
+                //Mengembalikan nilai NotFound dengan response body berupa objek ResponseErrorHandler
+                return NotFound(new ResponseErrorHandler
+                {
+                    Code = StatusCodes.Status404NotFound, //Inisialisasi atribut Code dengan nilai 500
+                    Status = HttpStatusCode.NotFound.ToString(), //Inisialisasi atribut Status dengan nilai NotFound
+                    Message = "Data Not Found" //Inisialisasi nilai atribut Message
+                });
+            }
+
+            //Melakuan Delete data Education melalui perantara contract _educationRepository
+            _educationRepository.Delete(educationById);
+
+            //Mengembalikan nilai berupa response OK dengan response body berupa objek ResponseOKHandler
+            return Ok(new ResponseOKHandler<string>("Data Deleted"));
         }
-        var result = _educationRepository.Delete(educationById);
-        if (!result)
+        catch (ExceptionHandler ex)
         {
-            return BadRequest("Failed to delete data");
+            //Mengembalikan nilai berupa Respon Status 500 dan objek ResponseErrorHandler
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status500InternalServerError, //Inisialiasi atribut Code dengan nilai 500
+                Status = HttpStatusCode.InternalServerError.ToString(), //Inisialisasi atribut Status dengan nilai InternalServerError
+                Message = "Failed to create data", //Inisialisasi atribut Message
+                Error = ex.Message //Inisialisasi nilai atribut Error berupa Message dari ExceptionHandler
+            });
         }
-        return Ok(result);
     }
 
     /*
@@ -105,25 +158,44 @@ public class EducationController : ControllerBase
     [HttpPut]
     public IActionResult Update(EducationDto educationDto)
     {
-        //Mendapatkan data Education berdasarkan guid
-        var educationById = _educationRepository.GetByGuid(educationDto.Guid);
-        if (educationById is null)
+        try
         {
-            return NotFound("ID Not Found");
-        }
-        
-        //Menyimpan data dari parameter ke dalam objek toUpdate, serta dilakukan mapping secara implisit
-        Education toUpdate = educationDto;
-        
-        //Inisialiasi nilai CreatedDate agar tidak ada perubahan dari data awal
-        toUpdate.ModifiedDate = DateTime.Now;
+            //Mendapatkan data Education berdasarkan guid
+            var educationById = _educationRepository.GetByGuid(educationDto.Guid);
+            if (educationById is null)
+            {
+                //Mengembalikan nilai response NotFound dengan response body berupa objek ResponseErrorHandler
+                return NotFound(new ResponseErrorHandler
+                {
+                    Code = StatusCodes.Status404NotFound, //Inisialisasi atribut Code dengan nilai 500
+                    Status = HttpStatusCode.NotFound.ToString(), //Inisialisasi atribut Status dengan nilai NotFound
+                    Message = "Data Not Found" //Inisialisasi nilai atribut Message
+                });
+            }
 
-        var result = _educationRepository.Update(educationById);
-        if (!result)
+            //Menyimpan data dari parameter ke dalam objek toUpdate, serta dilakukan mapping secara implisit
+            Education toUpdate = educationDto;
+
+            //Inisialiasi nilai CreatedDate agar tidak ada perubahan dari data awal
+            toUpdate.ModifiedDate = DateTime.Now;
+
+            //Melaukan update pada data education melalui perantara contract _educationRepository
+            _educationRepository.Update(educationById);
+
+
+            //Mengembalikan nilai response OK dengan response body berupa objek ResponseOKHandler dengan argumen string
+            return Ok(new ResponseOKHandler<string>("Data Updated"));
+        }
+        catch (ExceptionHandler ex)
         {
-            return BadRequest("Failed to Update Date");
-
+            //Mengembalikan nilai berupa Respon Status 500 dan objek ResponseErrorHandler
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status500InternalServerError, //Inisialiasi atribut Code dengan nilai 500
+                Status = HttpStatusCode.InternalServerError.ToString(), //Inisialisasi atribut Status dengan nilai InternalServerError
+                Message = "Failed to create data", //Inisialisasi atribut Message
+                Error = ex.Message //Inisialisasi nilai atribut Error berupa Message dari ExceptionHandler
+            });
         }
-        return Ok(result);
     }
 }

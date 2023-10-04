@@ -1,7 +1,9 @@
 ﻿using API.Contracts;
 using API.DTOs.Rooms;
 using API.Models;
+using API.Utilities.Handlers;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 namespace API.Controllers;
 
@@ -30,12 +32,20 @@ public class RoomController : ControllerBase
         var result = _roomRepository.GetAll();
         if (!result.Any())
         {
-            return NotFound("Data Not Found");
+            //Mengembalikan nilai dengan response body berupa objek ResponseErrorHandler
+            return NotFound(new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status404NotFound, //Inisialisasi nilai atribut Code
+                Status = HttpStatusCode.NotFound.ToString(), //Inisialisai nilai atribut Status
+                Message = "Data Not Found" //Inisialisasi nilai atribut Message
+            });
         }
 
         //mapping setiap item variabel result ke dalam object dari kelas RoomDto menggunakan explicit operator
         var data = result.Select(x => (RoomDto)x);
-        return Ok(data);
+
+        //Mengembalikan nilai berupa objek ResponseOKHandler dengan argument <IEnumerable<RoomDto>
+        return Ok(new ResponseOKHandler<IEnumerable<RoomDto>>(data));
     }
 
     /*
@@ -46,13 +56,23 @@ public class RoomController : ControllerBase
     [HttpGet("{guid}")]
     public IActionResult GetByGuid(Guid guid)
     {
+        //Mendapatkan data Room berdasrkan Guid dan disimpan pada variabel result
         var result = _roomRepository.GetByGuid(guid);
+
+        //Mengecek apakah variabel result bernilai null
         if (result is null)
         {
-            return NotFound("Id Not Found");
-        }
+            //Mengembalikan nilai dengan response body berupa objek ResponseErrorHandler
+            return NotFound(new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status404NotFound, //Inisialisasi nilai atribut Code
+                Status = HttpStatusCode.NotFound.ToString(), //Inisialisai nilai atribut Status
+                Message = "Data Not Found" //Inisialisasi nilai atribut Message
+            });
+    }
         //mapping variabel result ke RoomDto menggunakan explicit operator
-        return Ok((RoomDto)result);
+        //Mengembalikan nilai berupa response OK dengan response body berupa objek ResponseOKHandler
+        return Ok(new ResponseOKHandler<RoomDto>((RoomDto)result));
     }
 
     /*
@@ -63,16 +83,26 @@ public class RoomController : ControllerBase
     [HttpPost]
     public IActionResult Create(CreateRoomDto createRoomDto)
     {
-
-        //Mapping secara implisit pada createRoomDto untuk dijadikan objek Room
-        var result = _roomRepository.Create(createRoomDto);
-        if (result is null)
+        try
         {
-            return BadRequest("Failed to create data");
-        }
+            //Mapping secara implisit pada createRoomDto untuk dijadikan objek Room
+            var result = _roomRepository.Create(createRoomDto);
 
-        //Mapping variabel result ke RoomDto menggunakan explicit operator
-        return Ok((RoomDto)result);
+            //Mapping variabel result ke RoomDto menggunakan explicit operator
+            //Mengembalikan nilai berupa response OK dengan response body berupa objek ResponseOKHandler
+            return Ok(new ResponseOKHandler<RoomDto>((RoomDto)result));
+        }
+        catch (ExceptionHandler ex)
+        {
+            //Mengembalikan nilai dengan response body berupa objek ResponseErrorHandler
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status500InternalServerError,//Inisialisasi atribut Code dengan nilai 500
+                Status = HttpStatusCode.InternalServerError.ToString(), //Inisialisasi atribut Status dengan nilai InternalServerError
+                Message = "Failed to Create Data", //Inisialisasi nilai atribut Message
+                Error = ex.Message  //Inisialisasi nilai atribut Error berupa Message dari ExceptionHandler
+            });
+        }
     }
 
     /*
@@ -83,17 +113,40 @@ public class RoomController : ControllerBase
     [HttpDelete]
     public IActionResult Delete(Guid guid)
     {
-        var roomByGuid = _roomRepository.GetByGuid(guid);
-        if (roomByGuid is null)
+        try
         {
-            return NotFound("ID Not Found");
+            //Mendapatkan data Room berdasrkan Guid dan disimpan pada variabel roomByGuid
+            var roomByGuid = _roomRepository.GetByGuid(guid);
+
+            //Mengecek apakah roomByGuid bernilai null
+            if (roomByGuid is null)
+            {
+                //Mengembalikan nilai NotFound dengan response body berupa objek ResponseErrorHandler
+                return NotFound(new ResponseErrorHandler
+                {
+                    Code = StatusCodes.Status404NotFound, //Inisialisasi atribut Code dengan nilai 500
+                    Status = HttpStatusCode.NotFound.ToString(), //Inisialisasi atribut Status dengan nilai NotFound
+                    Message = "Data Not Found" //Inisialisasi nilai atribut Message
+                });
+            }
+
+            //Melakuan Delete data Room melalui perantara contract _roomRepository
+            _roomRepository.Delete(roomByGuid);
+
+            //Mengembalikan nilai berupa response OK dengan response body berupa objek ResponseOKHandler
+            return Ok(new ResponseOKHandler<string>("Data Deleted"));
         }
-        var result = _roomRepository.Delete(roomByGuid);
-        if (!result)
+        catch (ExceptionHandler ex)
         {
-            return BadRequest("Failed to delete data");
+            //Mengembalikan nilai berupa Respon Status 500 dan objek ResponseErrorHandler
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status500InternalServerError, //Inisialiasi atribut Code dengan nilai 500
+                Status = HttpStatusCode.InternalServerError.ToString(), //Inisialisasi atribut Status dengan nilai InternalServerError
+                Message = "Failed to create data", //Inisialisasi atribut Message
+                Error = ex.Message //Inisialisasi nilai atribut Error berupa Message dari ExceptionHandler
+            });
         }
-        return Ok("Data Deleted");
     }
 
     /*
@@ -104,26 +157,46 @@ public class RoomController : ControllerBase
     [HttpPut]
     public IActionResult UpdateByGuid(RoomDto roomDto)
     {
-        var roomByGuid = _roomRepository.GetByGuid(roomDto.Guid);
-        if (roomByGuid is null)
+        try
         {
-            return NotFound("ID Not Found");
-        }
+            //Mendapatkan data Room berdasarkan guid dan disimpan pada variabel roomByGuid
+            var roomByGuid = _roomRepository.GetByGuid(roomDto.Guid);
 
-        //Mendapatkan data Room berdasarkan guid
-        Room toUpdate = roomDto;
+            //Mengecek apakah roomByGuid bernilai null
+            if (roomByGuid is null)
+            {
+                //Mengembalikan nilai response NotFound dengan response body berupa objek ResponseErrorHandler
+                return NotFound(new ResponseErrorHandler
+                {
+                    Code = StatusCodes.Status404NotFound, //Inisialisasi atribut Code dengan nilai 500
+                    Status = HttpStatusCode.NotFound.ToString(), //Inisialisasi atribut Status dengan nilai NotFound
+                    Message = "Data Not Found" //Inisialisasi nilai atribut Message
+                });
+            }
+
+            //Mendapatkan data Room berdasarkan guid
+            Room toUpdate = roomDto;
         
-        //Inisialiasi nilai CreatedDate agar tidak ada perubahan dari data awal
-        toUpdate.CreatedDate = roomByGuid.CreatedDate;
+            //Inisialiasi nilai CreatedDate agar tidak ada perubahan dari data awal
+            toUpdate.CreatedDate = roomByGuid.CreatedDate;
 
-        //Melakukan Update dengan parameter toUpdate
-        var result = _roomRepository.Update(toUpdate);
-        if (!result)
-        {
-            return BadRequest("Failed to Update Date");
+            //Melakukan Update dengan parameter toUpdate
+            _roomRepository.Update(toUpdate);
 
+            //Mengembalikan nilai response OK dengan response body berupa objek ResponseOKHandler dengan argumen string
+            return Ok(new ResponseOKHandler<string>("Data Updated"));
         }
-        return Ok("Data Updated");
+        catch (ExceptionHandler ex)
+        {
+            //Mengembalikan nilai berupa Respon Status 500 dan objek ResponseErrorHandler
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status500InternalServerError, //Inisialiasi atribut Code dengan nilai 500
+                Status = HttpStatusCode.InternalServerError.ToString(), //Inisialisasi atribut Status dengan nilai InternalServerError
+                Message = "Failed to create data", //Inisialisasi atribut Message
+                Error = ex.Message //Inisialisasi nilai atribut Error berupa Message dari ExceptionHandler
+            });
+        }
     }
 
 }

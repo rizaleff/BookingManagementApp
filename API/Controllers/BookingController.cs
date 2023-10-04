@@ -1,7 +1,9 @@
 ﻿using API.Contracts;
 using API.DTOs.Bookings;
 using API.Models;
+using API.Utilities.Handlers;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 namespace API.Controllers;
 [ApiController] //Menandadakan bahwa kelas ini merupakan sebuah controller API
@@ -29,13 +31,20 @@ public class BookingController : ControllerBase
         var result = _bookingRepository.GetAll();
         if (!result.Any())
         {
-            return NotFound("Data Not Found");
+            //Mengembalikan nilai dengan response body berupa objek ResponseErrorHandler
+            return NotFound(new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status404NotFound, //Inisialisasi nilai atribut Code
+                Status = HttpStatusCode.NotFound.ToString(), //Inisialisai nilai atribut Status
+                Message = "Data Not Found" //Inisialisasi nilai atribut Message
+            });
         }
 
         //mapping setiap item variabel result ke dalam object dari kelas BookingDto menggunakan explicit operator
         var data = result.Select(x => (BookingDto)x);
 
-        return Ok(data);
+        //Mengembalikan nilai berupa objek ResponseOKHandler dengan argument <IEnumerable<BookingDto>
+        return Ok(new ResponseOKHandler<IEnumerable<BookingDto>>(data));
     }
 
     /*
@@ -46,14 +55,24 @@ public class BookingController : ControllerBase
     [HttpGet("{guid}")]
     public IActionResult GetByGuid(Guid guid)
     {
+        //Mendapatkan data Booking berdasrkan Gui dan disimpan pada variabel result
         var result = _bookingRepository.GetByGuid(guid);
+
+        //Mengecek apakah variabel result bernilai null
         if (result is null)
         {
-            return NotFound("Id Not Found");
+            //Mengembalikan nilai dengan response body berupa objek ResponseErrorHandler
+            return NotFound(new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status404NotFound, //Inisialisasi nilai atribut Code
+                Status = HttpStatusCode.NotFound.ToString(), //Inisialisai nilai atribut Status
+                Message = "Data Not Found" //Inisialisasi nilai atribut Message
+            });
         }
 
         //mapping variabel result ke BookingDto menggunakan explicit operator
-        return Ok((BookingDto)result);
+        //Mengembalikan nilai berupa response OK dengan response body berupa objek ResponseOKHandler
+        return Ok(new ResponseOKHandler<BookingDto>((BookingDto)result));
     }
 
     /*
@@ -64,15 +83,26 @@ public class BookingController : ControllerBase
     [HttpPost]
     public IActionResult Create(CreateBookingDto createBookingDto)
     {
-        //Mapping secara implisit pada createBookingDto untuk dijadikan objek Booking
-        var result = _bookingRepository.Create(createBookingDto);
-        if (result is null)
+        try
         {
-            return BadRequest("Failed to create data");
-        }
+            //Mapping secara implisit pada createBookingDto untuk dijadikan objek Booking
+            var result = _bookingRepository.Create(createBookingDto);
 
-        //Mapping variabel result ke BookingDto menggunakan explicit operator
-        return Ok((BookingDto)result);
+            //Mapping variabel result ke BookingDto menggunakan explicit operator
+            //Mengembalikan nilai berupa response OK dengan response body berupa objek ResponseOKHandler
+            return Ok(new ResponseOKHandler<BookingDto>((BookingDto)result));
+        }
+        catch (ExceptionHandler ex)
+        {
+            //Mengembalikan nilai dengan response body berupa objek ResponseErrorHandler
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status500InternalServerError,//Inisialisasi atribut Code dengan nilai 500
+                Status = HttpStatusCode.InternalServerError.ToString(), //Inisialisasi atribut Status dengan nilai InternalServerError
+                Message = "Failed to Create Data", //Inisialisasi nilai atribut Message
+                Error = ex.Message  //Inisialisasi nilai atribut Error berupa Message dari ExceptionHandler
+            });
+        }
     }
 
     /*
@@ -83,17 +113,40 @@ public class BookingController : ControllerBase
     [HttpDelete]
     public IActionResult Delete(Guid guid)
     {
-        var bookingByGuid = _bookingRepository.GetByGuid(guid);
-        if (bookingByGuid is null)
+        try
         {
-            return NotFound("ID Not Found");
+            //Mendapatkan data Booking berdasrkan Guid dan disimpan pada variabel bookingByGuid
+            var bookingByGuid = _bookingRepository.GetByGuid(guid);
+
+            //Mengecek apakah bookingByGuid bernilai null
+            if (bookingByGuid is null)
+            {
+                //Mengembalikan nilai NotFound dengan response body berupa objek ResponseErrorHandler
+                return NotFound(new ResponseErrorHandler
+                {
+                    Code = StatusCodes.Status404NotFound, //Inisialisasi atribut Code dengan nilai 500
+                    Status = HttpStatusCode.NotFound.ToString(), //Inisialisasi atribut Status dengan nilai NotFound
+                    Message = "Data Not Found" //Inisialisasi nilai atribut Message
+                });
+            }
+
+            //Melakuan Delete data booking melalui perantara contract _bookingRepository
+            _bookingRepository.Delete(bookingByGuid);
+
+            //Mengembalikan nilai berupa response OK dengan response body berupa objek ResponseOKHandler
+            return Ok(new ResponseOKHandler<string>("Data Deleted"));
         }
-        var result = _bookingRepository.Delete(bookingByGuid);
-        if (!result)
+        catch (ExceptionHandler ex)
         {
-            return BadRequest("Failed to delete data");
+            //Mengembalikan nilai berupa Respon Status 500 dan objek ResponseErrorHandler
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status500InternalServerError, //Inisialiasi atribut Code dengan nilai 500
+                Status = HttpStatusCode.InternalServerError.ToString(), //Inisialisasi atribut Status dengan nilai InternalServerError
+                Message = "Failed to create data", //Inisialisasi atribut Message
+                Error = ex.Message //Inisialisasi nilai atribut Error berupa Message dari ExceptionHandler
+            });
         }
-        return Ok("Data Deleted");
     }
 
     /*
@@ -104,27 +157,46 @@ public class BookingController : ControllerBase
     [HttpPut]
     public IActionResult UpdateByGuid(BookingDto bookingDto)
     {
-        //Mendapatkan data Booking berdasarkan guid
-        var bookingByGuid = _bookingRepository.GetByGuid(bookingDto.Guid);
-        if (bookingByGuid is null)
+        try
         {
-            return NotFound("ID Not Found");
-        }
+            //Mendapatkan data Booking berdasarkan guid
+            var bookingByGuid = _bookingRepository.GetByGuid(bookingDto.Guid);
 
-        //Menyimpan data dari parameter ke dalam objek toUpdate, serta dilakukan mapping secara implisit
-        Booking toUpdate = bookingDto;
+            //Mengecek apakah bookingByGuid bernilai null
+            if (bookingByGuid is null)
+            {
+                //Mengembalikan nilai response NotFound dengan response body berupa objek ResponseErrorHandler
+                return NotFound(new ResponseErrorHandler
+                {
+                    Code = StatusCodes.Status404NotFound, //Inisialisasi atribut Code dengan nilai 500
+                    Status = HttpStatusCode.NotFound.ToString(), //Inisialisasi atribut Status dengan nilai NotFound
+                    Message = "Data Not Found" //Inisialisasi nilai atribut Message
+                });
+            }
+
+            //Menyimpan data dari parameter ke dalam objek toUpdate, serta dilakukan mapping secara implisit
+            Booking toUpdate = bookingDto;
         
-        //Inisialiasi nilai CreatedDate agar tidak ada perubahan dari data awal
-        toUpdate.CreatedDate = bookingByGuid.CreatedDate;
+            //Inisialiasi nilai CreatedDate agar tidak ada perubahan dari data awal
+            toUpdate.CreatedDate = bookingByGuid.CreatedDate;
 
-        //Melakukan Update dengan parameter toUpdate
-        var result = _bookingRepository.Update(toUpdate);
-        if (!result)
-        {
-            return BadRequest("Failed to Update Date");
+            //Melakukan Update dengan parameter toUpdate
+            var result = _bookingRepository.Update(toUpdate);
 
+            //Mengembalikan nilai response OK dengan response body berupa objek ResponseOKHandler dengan argumen string
+            return Ok(new ResponseOKHandler<string>("Data Updated"));
         }
-        return Ok("Data Updated");
+        catch (ExceptionHandler ex)
+        {
+            //Mengembalikan nilai berupa Respon Status 500 dan objek ResponseErrorHandler
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status500InternalServerError, //Inisialiasi atribut Code dengan nilai 500
+                Status = HttpStatusCode.InternalServerError.ToString(), //Inisialisasi atribut Status dengan nilai InternalServerError
+                Message = "Failed to create data", //Inisialisasi atribut Message
+                Error = ex.Message //Inisialisasi nilai atribut Error berupa Message dari ExceptionHandler
+            });
+        }
     }
 
 }

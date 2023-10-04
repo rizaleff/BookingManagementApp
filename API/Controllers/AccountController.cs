@@ -3,6 +3,7 @@ using API.DTOs.Accounts;
 using API.Models;
 using API.Utilities.Handlers;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 namespace API.Controllers;
 
@@ -31,13 +32,20 @@ public class AccountController : ControllerBase
         var result = _accountRepository.GetAll();
         if (!result.Any())
         {
-            return NotFound("Data Not Found"); 
+            //Mengembalikan nilai dengan response body berupa objek ResponseErrorHandler
+            return NotFound(new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status404NotFound, //Inisialisasi nilai atribut Code
+                Status = HttpStatusCode.NotFound.ToString(), //Inisialisai nilai atribut Status
+                Message = "Data Not Found" //Inisialisasi nilai atribut Message
+            });
         }
 
         //mapping setiap item variabel result ke dalam object dari kelas AccountDto menggunakan explicit operator
-        var data = result.Select(x => (AccountDto)x); 
+        var data = result.Select(x => (AccountDto)x);
 
-        return Ok(data);
+        //Mengembalikan nilai berupa objek ResponseOKHandler dengan argument <IEnumerable<AccountDto>
+        return Ok(new ResponseOKHandler<IEnumerable<AccountDto>>(data));
     }
 
     /*
@@ -48,13 +56,22 @@ public class AccountController : ControllerBase
     [HttpGet("{guid}")]
     public IActionResult GetByGuid(Guid guid)
     {
+        //Mendapatkan data Account berdasrkan Gui dan disimpan pada variabel result
         var result = _accountRepository.GetByGuid(guid);
+        //Mengecek apakah variabel result bernilai null
         if (result is null)
         {
-            return NotFound("Id Not Found");
+            //Mengembalikan nilai dengan response body berupa objek ResponseErrorHandler
+            return NotFound(new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status404NotFound, //Inisialisasi nilai atribut Code
+                Status = HttpStatusCode.NotFound.ToString(), //Inisialisai nilai atribut Status
+                Message = "Data Not Found" //Inisialisasi nilai atribut Message
+            });
         }
+        ///Mengembalikan nilai response OK dengan response body berupa objek ResponseOKHandler dengan argumen string 
         //mapping variabel result ke AccountDto menggunakan explicit operator
-        return Ok((AccountDto)result); 
+        return Ok(new ResponseOKHandler<AccountDto>((AccountDto)result));
     }
 
     /*
@@ -65,18 +82,30 @@ public class AccountController : ControllerBase
     [HttpPost]
     public IActionResult Create(CreateAccountDto createAccountDto)
     {
-        //Hashing
-        Account toCreate = createAccountDto;
-        toCreate.Password = HashingHandler.HashPassword(toCreate.Password);
-
-        //Mapping secara implisit pada createAccountDto untuk dijadikan objek Account
-        var result = _accountRepository.Create(toCreate);
-        if (result is null)
+        try
         {
-            return BadRequest("Failed to create data");
+            //Hashing
+            Account toCreate = createAccountDto;
+            toCreate.Password = HashingHandler.HashPassword(toCreate.Password);
+
+            //Mapping secara implisit pada createAccountDto untuk dijadikan objek Account
+            var result = _accountRepository.Create(toCreate);
+
+            //Mapping variabel result ke AccountDto menggunakan explicit operator
+            //Mengembalikan nilai berupa response OK dengan response body berupa objek ResponseOKHandler
+            return Ok(new ResponseOKHandler<AccountDto>((AccountDto)result));
         }
-        //Mapping variabel result ke AccountDto menggunakan explicit operator
-        return Ok((AccountDto)result);
+        catch (ExceptionHandler ex)
+        {
+            //Mengembalikan nilai dengan response body berupa objek ResponseErrorHandler
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status500InternalServerError,//Inisialisasi atribut Code dengan nilai 500
+                Status = HttpStatusCode.InternalServerError.ToString(), //Inisialisasi atribut Status dengan nilai InternalServerError
+                Message = "Failed to Create Data", //Inisialisasi nilai atribut Message
+                Error = ex.Message  //Inisialisasi nilai atribut Error berupa Message dari ExceptionHandler
+            });
+        }
     }
 
     /*
@@ -87,17 +116,41 @@ public class AccountController : ControllerBase
     [HttpDelete]
     public IActionResult Delete(Guid guid)
     {
-        var accountByGuid = _accountRepository.GetByGuid(guid);
-        if (accountByGuid is null)
+        try
         {
-            return NotFound("ID Not Found");
+            //Mendapatkan data Account berdasrkan Gui dan disimpan pada variabel 
+            var accountByGuid = _accountRepository.GetByGuid(guid);
+
+            //Mengecek apakah accountByGuid bernilai null
+            if (accountByGuid is null)
+            {
+                //Mengembalikan nilai NotFound dengan response body berupa objek ResponseErrorHandler
+                return NotFound(new ResponseErrorHandler
+                {
+                    Code = StatusCodes.Status404NotFound, //Inisialisasi atribut Code dengan nilai 500
+                    Status = HttpStatusCode.NotFound.ToString(), //Inisialisasi atribut Status dengan nilai NotFound
+                    Message = "Data Not Found" //Inisialisasi nilai atribut Message
+                });
+            }
+
+            //Melakuan Delete data Account melalui perantara contract _accountRepository
+            _accountRepository.Delete(accountByGuid);
+
+            //Mengembalikan nilai berupa response OK dengan response body berupa objek ResponseOKHandler
+            return Ok(new ResponseOKHandler<string>("Data Deleted"));
+
         }
-        var result = _accountRepository.Delete(accountByGuid);
-        if (!result)
+        catch (ExceptionHandler ex)
         {
-            return BadRequest("Failed to delete data");
+            //Mengembalikan nilai berupa Respon Status 500 dan objek ResponseErrorHandler
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status500InternalServerError, //Inisialiasi atribut Code dengan nilai 500
+                Status = HttpStatusCode.InternalServerError.ToString(), //Inisialisasi atribut Status dengan nilai InternalServerError
+                Message = "Failed to create data", //Inisialisasi atribut Message
+                Error = ex.Message //Inisialisasi nilai atribut Error berupa Message dari ExceptionHandler
+            });
         }
-        return Ok("Data Deleted");
     }
 
     /*
@@ -108,25 +161,44 @@ public class AccountController : ControllerBase
     [HttpPut]
     public IActionResult UpdateByGuid(AccountDto accountdto)
     {
-        //Mendapatkan data Account berdasarkan guid
-        var accountByGuid = _accountRepository.GetByGuid(accountdto.Guid);
-        if (accountByGuid is null)
+        try
         {
-            return NotFound("ID Not Found");
+            //Mendapatkan data Account berdasarkan guid
+            var accountByGuid = _accountRepository.GetByGuid(accountdto.Guid);
+
+            //Mengecek apakah accountByGuid bernilai null
+            if (accountByGuid is null)
+            {
+                //Mengembalikan nilai response NotFound dengan response body berupa objek ResponseErrorHandler
+                return NotFound(new ResponseErrorHandler
+                {
+                    Code = StatusCodes.Status404NotFound, //Inisialisasi atribut Code dengan nilai 500
+                    Status = HttpStatusCode.NotFound.ToString(), //Inisialisasi atribut Status dengan nilai NotFound
+                    Message = "Data Not Found" //Inisialisasi nilai atribut Message
+                });
+            }
+            //Menyimpan data dari parameter ke dalam objek toUpdate, serta dilakukan mapping secara implisit
+            Account toUpdate = accountdto;
+
+            //Inisialiasi nilai CreatedDate agar tidak ada perubahan dari data awal
+            toUpdate.CreatedDate = accountByGuid.CreatedDate; 
+
+            //Melakukan Update dengan parameter toUpdate
+            var result = _accountRepository.Update(toUpdate);
+
+            //Mengembalikan nilai response OK dengan response body berupa objek ResponseOKHandler dengan argumen string
+            return Ok(new ResponseOKHandler<string>("Data Updated"));
         }
-        //Menyimpan data dari parameter ke dalam objek toUpdate, serta dilakukan mapping secara implisit
-        Account toUpdate = accountdto;
-
-        //Inisialiasi nilai CreatedDate agar tidak ada perubahan dari data awal
-        toUpdate.CreatedDate = accountByGuid.CreatedDate; 
-
-        //Melakukan Update dengan parameter toUpdate
-        var result = _accountRepository.Update(toUpdate);
-        if (!result)
+        catch (ExceptionHandler ex)
         {
-            return BadRequest("Failed to Update Date");
-
+            //Mengembalikan nilai berupa Respon Status 500 dan objek ResponseErrorHandler
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status500InternalServerError, //Inisialiasi atribut Code dengan nilai 500
+                Status = HttpStatusCode.InternalServerError.ToString(), //Inisialisasi atribut Status dengan nilai InternalServerError
+                Message = "Failed to create data", //Inisialisasi atribut Message
+                Error = ex.Message //Inisialisasi nilai atribut Error berupa Message dari ExceptionHandler
+            });
         }
-        return Ok("Data Updated");
     }
 }

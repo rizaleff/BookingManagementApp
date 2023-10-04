@@ -1,8 +1,9 @@
 ﻿using API.Contracts;
 using API.DTOs.Roles;
 using API.Models;
+using API.Utilities.Handlers;
 using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics.Contracts;
+using System.Net;
 
 namespace API.Controllers;
 
@@ -31,13 +32,21 @@ public class RoleController : ControllerBase
         var result = _roleRepository.GetAll();
         if (!result.Any())
         {
-            return NotFound("Data Not Found");
+            //Mengembalikan nilai dengan response body berupa objek ResponseErrorHandler
+            return NotFound(new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status404NotFound, //Inisialisasi nilai atribut Code
+                Status = HttpStatusCode.NotFound.ToString(), //Inisialisai nilai atribut Status
+                Message = "Data Not Found" //Inisialisasi nilai atribut Message
+            });
         }
 
         //mapping setiap item variabel result ke dalam object dari kelas RoleDto menggunakan explicit operator
         var data = result.Select(x => (RoleDto)x);
-        
-        return Ok(data);
+
+
+        //Mengembalikan nilai berupa objek ResponseOKHandler dengan argument<IEnumerable<RoleDto>
+        return Ok(new ResponseOKHandler<IEnumerable<RoleDto>>(data));
     }
 
     /*
@@ -48,13 +57,23 @@ public class RoleController : ControllerBase
     [HttpGet("{guid}")]
     public IActionResult GetByGuid(Guid guid)
     {
+        //Mendapatkan data Role berdasrkan Gui dan disimpan pada variabel result
         var result = _roleRepository.GetByGuid(guid);
+
+        //Mengecek apakah variabel result bernilai null
         if (result is null)
         {
-            return NotFound("Id Not Found");
+            //Mengembalikan nilai dengan response body berupa objek ResponseErrorHandler
+            return NotFound(new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status404NotFound, //Inisialisasi nilai atribut Code
+                Status = HttpStatusCode.NotFound.ToString(), //Inisialisai nilai atribut Status
+                Message = "Data Not Found" //Inisialisasi nilai atribut Message
+            });
         }
         //mapping variabel result ke RoleDto menggunakan explicit operator
-        return Ok((RoleDto)result);
+        //Mengembalikan nilai berupa response OK dengan response body berupa objek ResponseOKHandler
+        return Ok(new ResponseOKHandler<RoleDto>((RoleDto)result));
     }
 
     /*
@@ -65,15 +84,26 @@ public class RoleController : ControllerBase
     [HttpPost]
     public IActionResult Create(CreateRoleDto createRoleDto)
     {
-        //Mapping secara implisit pada createRoleDto untuk dijadikan objek Role
-        var result = _roleRepository.Create(createRoleDto);
-        if (result is null)
+        try
         {
-            return BadRequest("Failed to create data");
-        }
+            //Mapping secara implisit pada createRoleDto untuk dijadikan objek Role
+            var result = _roleRepository.Create(createRoleDto);
 
-        //Mapping variabel result ke RoleDto menggunakan explicit operator
-        return Ok((RoleDto)result);
+            //Mapping variabel result ke RoleDto menggunakan explicit operator
+            //Mengembalikan nilai berupa response OK dengan response body berupa objek ResponseOKHandler
+            return Ok(new ResponseOKHandler<RoleDto>((RoleDto)result));
+        }
+        catch (ExceptionHandler ex)
+        {
+            //Mengembalikan nilai dengan response body berupa objek ResponseErrorHandler
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status500InternalServerError,//Inisialisasi atribut Code dengan nilai 500
+                Status = HttpStatusCode.InternalServerError.ToString(), //Inisialisasi atribut Status dengan nilai InternalServerError
+                Message = "Failed to Create Data", //Inisialisasi nilai atribut Message
+                Error = ex.Message  //Inisialisasi nilai atribut Error berupa Message dari ExceptionHandler
+            });
+        }
     }
 
 
@@ -85,17 +115,40 @@ public class RoleController : ControllerBase
     [HttpDelete]
     public IActionResult Delete(Guid guid)
     {
-        var roleByGuid = _roleRepository.GetByGuid(guid);
-        if (roleByGuid is null)
+        try
         {
-            return NotFound("ID Not Found");
+            //Mendapatkan data Role berdasrkan Guid dan disimpan pada variabel roleByGuid
+            var roleByGuid = _roleRepository.GetByGuid(guid);
+
+            //Mengecek apakah roleByGuid bernilai null
+            if (roleByGuid is null)
+            {
+                //Mengembalikan nilai NotFound dengan response body berupa objek ResponseErrorHandler
+                return NotFound(new ResponseErrorHandler
+                {
+                    Code = StatusCodes.Status404NotFound, //Inisialisasi atribut Code dengan nilai 500
+                    Status = HttpStatusCode.NotFound.ToString(), //Inisialisasi atribut Status dengan nilai NotFound
+                    Message = "Data Not Found" //Inisialisasi nilai atribut Message
+                });
+            }
+
+            //Melakuan Delete data role melalui perantara contract _roleRepository
+            _roleRepository.Delete(roleByGuid);
+
+            //Mengembalikan nilai berupa response OK dengan response body berupa objek ResponseOKHandler
+            return Ok(new ResponseOKHandler<string>("Data Deleted"));
         }
-        var result = _roleRepository.Delete(roleByGuid);
-        if (!result)
+        catch (ExceptionHandler ex)
         {
-            return BadRequest("Failed to delete data");
+            //Mengembalikan nilai berupa Respon Status 500 dan objek ResponseErrorHandler
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status500InternalServerError, //Inisialiasi atribut Code dengan nilai 500
+                Status = HttpStatusCode.InternalServerError.ToString(), //Inisialisasi atribut Status dengan nilai InternalServerError
+                Message = "Failed to create data", //Inisialisasi atribut Message
+                Error = ex.Message //Inisialisasi nilai atribut Error berupa Message dari ExceptionHandler
+            });
         }
-        return Ok("Data Deleted");
     }
 
     /*
@@ -106,27 +159,46 @@ public class RoleController : ControllerBase
     [HttpPut]
     public IActionResult UpdateByGuid(RoleDto roleDto)
     {
-        //Mendapatkan data Role berdasarkan guid
-        var roleByGuid = _roleRepository.GetByGuid(roleDto.Guid);
-        if (roleByGuid is null)
-        {
-            return NotFound("ID Not Found");
-        }
+        try 
+        { 
+            //Mendapatkan data Role berdasarkan guid
+            var roleByGuid = _roleRepository.GetByGuid(roleDto.Guid);
 
-        //Menyimpan data dari parameter ke dalam objek toUpdate, serta dilakukan mapping secara implisit
-        Role toUpdate = roleDto;
+            //Mengecek apakah roleByGuid bernilai null
+            if (roleByGuid is null)
+            {
+                //Mengembalikan nilai response NotFound dengan response body berupa objek ResponseErrorHandler
+                return NotFound(new ResponseErrorHandler
+                {
+                    Code = StatusCodes.Status404NotFound, //Inisialisasi atribut Code dengan nilai 500
+                    Status = HttpStatusCode.NotFound.ToString(), //Inisialisasi atribut Status dengan nilai NotFound
+                    Message = "Data Not Found" //Inisialisasi nilai atribut Message
+                });
+            }
+
+            //Menyimpan data dari parameter ke dalam objek toUpdate, serta dilakukan mapping secara implisit
+            Role toUpdate = roleDto;
         
-        //Inisialiasi nilai CreatedDate agar tidak ada perubahan dari data awal
-        toUpdate.CreatedDate = roleByGuid.CreatedDate;
+            //Inisialiasi nilai CreatedDate agar tidak ada perubahan dari data awal
+            toUpdate.CreatedDate = roleByGuid.CreatedDate;
 
-        //Melakukan Update dengan parameter toUpdate
-        var result = _roleRepository.Update(toUpdate);
-        if (!result)
-        {
-            return BadRequest("Failed to Update Date");
+            //Melakukan Update dengan parameter toUpdate
+            var result = _roleRepository.Update(toUpdate);
 
+            //Mengembalikan nilai response OK dengan response body berupa objek ResponseOKHandler dengan argumen string
+            return Ok(new ResponseOKHandler<string>("Data Updated"));
         }
-        return Ok("Data Updated");
+        catch (ExceptionHandler ex)
+        {
+            //Mengembalikan nilai berupa Respon Status 500 dan objek ResponseErrorHandler
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status500InternalServerError, //Inisialiasi atribut Code dengan nilai 500
+                Status = HttpStatusCode.InternalServerError.ToString(), //Inisialisasi atribut Status dengan nilai InternalServerError
+                Message = "Failed to create data", //Inisialisasi atribut Message
+                Error = ex.Message //Inisialisasi nilai atribut Error berupa Message dari ExceptionHandler
+            });
+        }
     }
 
 
