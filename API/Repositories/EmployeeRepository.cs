@@ -26,6 +26,13 @@ public class EmployeeRepository : GeneralRepository<Employee>, IEmployeeReposito
 
         return employee?.Nik ?? "";
     }
-}
 
+    public Guid GetGuidByEmail(string email)
+    {
+        Guid guid = _context.Employees.Where(e => e.Email == email)
+            .Select(e => e.Guid).FirstOrDefault();
+        
+        return guid;
+    }
+}
 

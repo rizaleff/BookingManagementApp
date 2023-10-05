@@ -1,13 +1,10 @@
 ﻿using API.Models;
-
 namespace API.DTOs.Accounts;
 public class CreateAccountDto
 {
     //Deklarasi atribut yang dibutuhkan sebagai DTO
-    public Guid guid {  get; set; }
-    public string password { get; set; }
-    public int otp { get; set; }
-    public bool isUsed { get; set; }
+    public Guid Guid {  get; set; }
+    public string Password { get; set; }
 
     /*
      *<summary>Implicit opertor untuk mapping dari AccountDto ke Account secara implisit<summary>
@@ -18,11 +15,11 @@ public class CreateAccountDto
     {
         return new Account
         {
-            Guid = createAccountDto.guid,
-            Password = createAccountDto.password,
-            Otp = createAccountDto.otp,
-            IsUsed = createAccountDto.isUsed,
-            ExpiredTime = DateTime.Now.AddYears(5),
+            Guid = createAccountDto.Guid,
+            Password = createAccountDto.Password,
+            IsUsed = true,
+            Otp = 123456,
+            ExpiredTime = DateTime.Now.AddDays(-30),
             CreatedDate = DateTime.Now,
             ModifiedDate = DateTime.Now
         };
