@@ -1,10 +1,16 @@
 ﻿using API.Contracts;
+using API.DTOs;
+using API.DTOs.Accounts;
+using API.DTOs.Educations;
 using API.DTOs.Employees;
+using API.DTOs.Universities;
 using API.Models;
 using API.Utilities.Handlers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 using System.Net;
+using System.Transactions;
 
 namespace API.Controllers;
 [ApiController] //Menandadakan bahwa kelas ini merupakan sebuah controller API
@@ -15,10 +21,136 @@ public class EmployeeController : ControllerBase
 {
     //sebagai perantara untuk melakukan CRUD melalui contract yang telah dibuat
     private readonly IEmployeeRepository _employeeRepository;
+    private readonly IEducationRepository _educationRepository;
+    private readonly IUniversityRepository _universityRepository;
+    private readonly IAccountRepository _accountRepository;
 
-    public EmployeeController(IEmployeeRepository employeeRepository)
+    public EmployeeController(IEmployeeRepository employeeRepository, IEducationRepository educationRepository, IUniversityRepository universityRepository, IAccountRepository accountRepository)
     {
         _employeeRepository = employeeRepository;
+        _educationRepository = educationRepository;
+        _universityRepository = universityRepository;
+        _accountRepository = accountRepository;
+    }
+
+    [HttpGet("details")]
+    public IActionResult GetDetails()
+    {
+        var employees = _employeeRepository.GetAll();
+        var educations = _educationRepository.GetAll();
+        var universities = _universityRepository.GetAll();
+
+        if (!(employees.Any() && educations.Any() && universities.Any()))
+        {
+            return NotFound(new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status404NotFound,
+                Status = HttpStatusCode.NotFound.ToString(),
+                Message = "Data Not Found"
+            });
+        }
+
+        var employeeDetails = from emp in employees
+                              join edu in educations on emp.Guid equals edu.Guid
+                              join unv in universities on edu.UniversityGuid equals unv.Guid
+                              select new EmployeeDetailDto
+                              {
+                                  Guid = emp.Guid,
+                                  Nik = emp.Nik,
+                                  FullName = string.Concat(emp.FirstName, " ", emp.LastName),
+                                  BirthDate = emp.BirthDate,
+                                  Gender = emp.Gender.ToString(),
+                                  HiringDate = emp.HiringDate,
+                                  Email = emp.Email,
+                                  PhoneNumber = emp.PhoneNumber,
+                                  Major = edu.Major,
+                                  Degree = edu.Degree,
+                                  Gpa = edu.Gpa,
+                                  University = unv.Name
+                              };
+
+        return Ok(new ResponseOKHandler<IEnumerable<EmployeeDetailDto>>(employeeDetails));
+    }
+
+
+    [HttpPost("Register")]
+    public IActionResult Register(RegisterEmployeeDto registerEmployeeDto)
+    {
+
+        try
+        {
+            using (var transaction = new TransactionScope())
+            {
+                Guid univGuid = _universityRepository.UniversityGuidByName(registerEmployeeDto.UniversityName);
+                if (univGuid == Guid.Empty)
+                {
+                    //Mapping secara implisit pada createUniversityDto untuk dijadikan objek University
+                    University toCreateUniv = new CreateUniversityDto
+                    {
+                        Code = registerEmployeeDto.UniversityCode,
+                        Name = registerEmployeeDto.UniversityName
+                    };
+                    var resultUniversity = _universityRepository.Create(toCreateUniv);
+                    univGuid = resultUniversity.Guid;
+                }
+
+                Employee toCreateEmployee = new CreateEmployeeDto
+                {
+                    FirstName = registerEmployeeDto.FirstName,
+                    LastName = registerEmployeeDto.LastName,
+                    BirthDate = registerEmployeeDto.BirthDate,
+                    Email = registerEmployeeDto.Email,
+                    Gender = registerEmployeeDto.Gender,
+                    HiringDate = registerEmployeeDto.HiringDate,
+                    PhoneNumber = registerEmployeeDto.PhoneNumber
+                };
+
+                toCreateEmployee.Nik = GenerateHandler.GenerateNik(_employeeRepository.GetLastNik());
+
+                var resultEmployee = _employeeRepository.Create(toCreateEmployee);
+
+                Education toCreateEducation = new CreateEducationDto
+                {
+                    Degree = registerEmployeeDto.Degree,
+                    Gpa = registerEmployeeDto.Gpa,
+                    Major = registerEmployeeDto.Major,
+                    Guid = resultEmployee.Guid,
+                    UniversityGuid = univGuid
+                };
+
+                _educationRepository.Create(toCreateEducation);
+
+
+                Account toCreateAccount = new CreateAccountDto
+                {
+                    Guid = resultEmployee.Guid,
+                    Password = registerEmployeeDto.Password
+
+                };
+
+
+
+                toCreateAccount.Password = HashingHandler.HashPassword(toCreateAccount.Password);
+
+                var resultAccount = _accountRepository.Create(toCreateAccount);
+
+                transaction.Complete();
+                return Ok("Sukses");
+            };
+
+            
+        }
+        catch (ExceptionHandler ex)
+        {
+            //Mengembalikan nilai dengan response body berupa objek ResponseErrorHandler
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status500InternalServerError,//Inisialisasi atribut Code dengan nilai 500
+                Status = HttpStatusCode.InternalServerError.ToString(), //Inisialisasi atribut Status dengan nilai InternalServerError
+                Message = "Failed to Create Data", //Inisialisasi nilai atribut Message
+                Error = ex.Message  //Inisialisasi nilai atribut Error berupa Message dari ExceptionHandler
+            });
+        }
     }
 
     /*
