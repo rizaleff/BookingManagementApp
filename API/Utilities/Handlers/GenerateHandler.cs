@@ -20,4 +20,29 @@ public class GenerateHandler
         return nik.ToString();
     }
 
+
+    public static int GenerateOtp()
+    {
+        Random random = new Random();
+        int otp = random.Next(100000, 999999);
+        return otp;
+    }
+    
+    //Method untuk generate durasi hari berdasarkan start date dan end date
+    public static int GenerateDayLength(DateTime startDate, DateTime endDate)
+    {
+        //Instansiasi variabel dayLength
+        int dayLength = 0;
+
+        //Perulangan untuk menghitung durasi hari
+        for (var date = startDate; date <= endDate; date = date.AddDays(1))
+        {
+            //Mengabaikan hari sabtu dan Minggu
+            if (date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday)
+            {
+                dayLength++;
+            }
+        }
+        return dayLength;
+    }
 }

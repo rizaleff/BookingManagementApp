@@ -1,4 +1,5 @@
 ﻿using API.Models;
+using API.Utilities.Enums;
 
 namespace API.DTOs.Employees;
 public class EmployeeDto
@@ -9,11 +10,10 @@ public class EmployeeDto
     public string FirstName { get; set; }
     public string LastName { get; set; }
     public DateTime BirthDate { get; set; }
-    public int Gender { get; set; }
+    public GenderLevel Gender { get; set; }
     public DateTime HiringDate { get; set; }
     public string Email { get; set; }
     public string PhoneNumber { get; set; }
-
     /*
      *<summary>Implicit opertor untuk mapping dari EmployeeDto ke Employee secara implisit<summary>
      *<param name="employeeDto>Object EmployeeDto yang akan di Mapping</param>
@@ -35,7 +35,6 @@ public class EmployeeDto
             ModifiedDate = DateTime.Now
         };
     }
-
     /*
      *<summary>Explicit opertor untuk mapping dari Employee ke EmployeeDto secara eksplisit<summary>
      *<param name="employee>Object Employee yang akan di Mapping</param>

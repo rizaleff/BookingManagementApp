@@ -34,6 +34,19 @@ public class ResponseOKHandler<TEntity>
     {
         Code = StatusCodes.Status200OK; //Inisialiasi nilai atribut Code dengan nlai status code 200
         Status = HttpStatusCode.OK.ToString(); //Inisialiasi nilai atribut Status dengan nlai Ok
-        Message = "Success to Retrieve Data"; //Inisialiasi nilai atribut Message
+        Message = message; //Inisialiasi nilai atribut Message
+    }
+
+    /* Constructor ResponseOKHandler(string message, TEntity data)
+     * <summary> Digunakan untuk menampilkan response body </summary>
+     * <params name="message"> Paramter string berupa Pesan yang ditampilkan pada response body</params>
+     * <params name="data"> Paramter generic ex: data Token</params>
+     */
+    public ResponseOKHandler(string message, TEntity data)
+    {
+        Code = StatusCodes.Status200OK;
+        Status = HttpStatusCode.OK.ToString();  
+        Message = message;
+        Data = data;    
     }
 }

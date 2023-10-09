@@ -1,5 +1,4 @@
 ﻿using API.Models;
-
 namespace API.DTOs.Universities;
 public class UniversityDto
 {

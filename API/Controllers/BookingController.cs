@@ -11,7 +11,7 @@ using System.Threading.Tasks.Dataflow;
 namespace API.Controllers;
 [ApiController] //Menandadakan bahwa kelas ini merupakan sebuah controller API
 [Route("api/[controller]")] //format route dari tiap endpoint pada controller ini
-//[Authorize]
+[Authorize]
 //Deklarasi kelas BookingController yang merupakan turunan dari kelas ControllerBase
 public class BookingController : ControllerBase
 {
@@ -205,18 +205,19 @@ public class BookingController : ControllerBase
             });
         }
 
-       ;
+       //Join untuk menggabungkan data bookings dan rooms 
         var bookingLength = from boo in bookings
                             join roo in rooms on boo.RoomGuid equals roo.Guid
                             select new BookingLengthDto
                             {
                                 RoomGuid = roo.Guid,
                                 RoomName = roo.Name,
-                                BookingLength = GenerateHandler.GenerateDayLength(boo.StartDate, boo.EndDate)
+
+                                //Instansiasi nilai BookingLength dari return value method GenerateDayLength
+                                BookingLength = GenerateHandler.GenerateDayLength(boo.StartDate, boo.EndDate) 
                             };
 
-
-
+        //Mengembalikan nilai berupa objek ResponseOKHandler dengan argument variabel bookingLength
         return Ok(new ResponseOKHandler<IEnumerable<BookingLengthDto>>(bookingLength));
     }
 

@@ -38,8 +38,6 @@ namespace API.Data
             modelBuilder.Entity<Employee>().HasIndex(e => e.Email).IsUnique();
             modelBuilder.Entity<Employee>().HasIndex(e => e.PhoneNumber).IsUnique();
 
-
-
             // One University has many educations
             modelBuilder.Entity<University>()
                 .HasMany(e => e.Educations)

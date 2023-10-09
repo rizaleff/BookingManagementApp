@@ -322,19 +322,21 @@ public class AccountController : ControllerBase
         claims.Add(new Claim("Email", employeeByEmail.Email));
         claims.Add(new Claim("Full Name", employeeByEmail.FirstName + " " + employeeByEmail.LastName));
 
-
-
+        //Mendaptakan roles untuk setiap user
         var getRolesGuid = _accountRoleRepository.GetRolesGuidByAccountGuid(employeeByEmail.Guid);
 
+        //Perulangan untuk menambahkan roles sebagai payload untuk setiap account
         foreach (var roleGuid in getRolesGuid)
         {
             claims.Add(new Claim(ClaimTypes.Role, _roleRepository.GetByGuid(roleGuid).Name));
         }
 
-        //deklarasi variabel generateToken yang berisi token telah dienkripsi. Token ini digunakan untuk authentication dan akan selalu digunakan untuk reques ke method yang memerlukan authorize
+        //deklarasi variabel generateToken yang berisi token telah dienkripsi.
+        //Token ini digunakan untuk authentication dan akan selalu digunakan untuk reques ke method yang memerlukan authorize
         var generateToken = _tokenHandler.Generate(claims);
 
-        //Mengembalikan nilai response OK dengan response body berupa objek ResponseOKHandler dengan argumen string dan anonymous object berupa nilai variabel generateToken
+        //Mengembalikan nilai response OK dengan response body berupa objek ResponseOKHandler
+        //Dengan argumen string dan anonymous object berupa nilai variabel generateToken
         return Ok(new ResponseOKHandler<object>("Login Success", new {Token = generateToken}));
     }
 

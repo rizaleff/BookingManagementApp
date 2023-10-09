@@ -4,6 +4,7 @@ namespace API.DTOs.Educations;
 public class CreateEducationDto
 {
     //Deklarasi atribut yang dibutuhkan sebagai DTO
+    public Guid Guid {  get; set; }
     public string Major { get; set; }
     public string Degree { get; set; }
 
@@ -20,6 +21,7 @@ public class CreateEducationDto
     {
         return new Education
         {
+            Guid = createEducationDto.Guid,
             Major = createEducationDto.Major,
             Degree = createEducationDto.Degree,
             Gpa = createEducationDto.Gpa,

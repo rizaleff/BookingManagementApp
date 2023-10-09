@@ -1,4 +1,5 @@
 ﻿using API.Models;
+using API.Utilities.Enums;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Runtime.CompilerServices;
 
@@ -8,7 +9,7 @@ public class CreateBookingDto
     //Deklarasi atribut yang dibutuhkan sebagai DTO
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
-    public int Status { get; set; }
+    public StatusLevel Status { get; set; }
     public string Remarks { get; set; }
     public Guid RoomGuid { get; set; }
     public Guid EmployeeGuid { get; set; }

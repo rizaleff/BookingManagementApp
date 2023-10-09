@@ -1,5 +1,4 @@
 ﻿using API.Models;
-
 namespace API.DTOs.Accounts;
 public class AccountDto
 {
@@ -9,7 +8,6 @@ public class AccountDto
     public int Otp { get; set; }
     public bool IsUsed { get; set; }
     public DateTime ExpiredTime {  get; set; }
-
     /*
      *<summary>Implicit opertor untuk mapping dari AccountDto ke Account secara implisit<summary>
      *<param name="accountDto>Object AccountDto yang akan di Mapping</param>
@@ -27,7 +25,6 @@ public class AccountDto
             ModifiedDate = DateTime.Now
         };
     }
-
     /*
      *<summary>Explicit opertor untuk mapping dari Account ke AccountDto secara eksplisit<summary>
      *<param name="account>Object Account yang akan di Mapping</param>

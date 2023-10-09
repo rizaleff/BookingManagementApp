@@ -1,4 +1,5 @@
 ﻿using API.Models;
+using API.Utilities.Enums;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace API.DTOs.Employees;
@@ -8,7 +9,7 @@ public class CreateEmployeeDto
     public string FirstName { get; set; }
     public string LastName { get; set; }
     public DateTime BirthDate { get; set; }
-    public int Gender { get; set; }
+    public GenderLevel Gender { get; set; }
     public DateTime HiringDate { get; set; }
     public string Email { get; set; }
     public string PhoneNumber { get; set; }
