@@ -33,6 +33,21 @@ public class EmployeeRepository : GeneralRepository<Employee>, IEmployeeReposito
             .Select(e => e.Guid).FirstOrDefault();
         
         return guid;
+
+    }
+
+    public Employee GetByEmail(string email)
+    {
+        Employee? employee = _context.Set<Employee>().FirstOrDefault(e => e.Email == email);
+        return employee;
+    }
+
+    public string GetNameByGuid(Guid guid)
+    {
+        return _context.Set<Employee>().Where(e => e.Guid == guid)
+                                .Select(e => e.FirstName + " " + e.LastName)
+                                .FirstOrDefault();
     }
 }
+
 

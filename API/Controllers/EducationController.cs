@@ -2,6 +2,7 @@
 using API.DTOs.Educations;
 using API.Models;
 using API.Utilities.Handlers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 
@@ -9,7 +10,7 @@ namespace API.Controllers;
 
 [ApiController] //Menandadakan bahwa kelas ini merupakan sebuah controller API
 [Route("api/[controller]")] //format route dari tiap endpoint pada controller ini
-
+[Authorize(Roles = "user")]
 //Deklarasi kelas EducationController yang merupakan turunan dari kelas ControllerBase
 public class EducationController : ControllerBase
 {

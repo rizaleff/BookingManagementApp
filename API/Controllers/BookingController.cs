@@ -1,23 +1,223 @@
 ﻿using API.Contracts;
 using API.DTOs.Bookings;
+using API.DTOs.Rooms;
 using API.Models;
 using API.Utilities.Handlers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
+using System.Threading.Tasks.Dataflow;
 
 namespace API.Controllers;
 [ApiController] //Menandadakan bahwa kelas ini merupakan sebuah controller API
 [Route("api/[controller]")] //format route dari tiap endpoint pada controller ini
-
+//[Authorize]
 //Deklarasi kelas BookingController yang merupakan turunan dari kelas ControllerBase
 public class BookingController : ControllerBase
 {
     //sebagai perantara untuk melakukan CRUD melalui contract yang telah dibuat
     private readonly IBookingRepository _bookingRepository;
+    private readonly IRoomRepository _roomRepository;
+    private readonly IEmployeeRepository _employeeRepository;
 
-    public BookingController(IBookingRepository accountRepository)
+    public BookingController(IBookingRepository accountRepository, IRoomRepository roomRepository,
+                             IEmployeeRepository employeeRepository)
     {
         _bookingRepository = accountRepository;
+        _roomRepository = roomRepository;
+        _employeeRepository = employeeRepository;
+    }
+
+    //Endpoint dengan menggunakan method HTTP Get untuk medapatkan data ruangan yang digunakan hari ini
+    [HttpGet("booking-today")]
+    public IActionResult GetBookingToday()
+    {
+        //Mendapatkan semua data booking pada hari ini
+        var bookedToday = _bookingRepository.GetBookedToday();
+
+        //Mendapatakan seluruh data rooms
+        var rooms = _roomRepository.GetAll();
+
+        //Mengecek apakah terdapat data pada variabel bookedToday dan akan mereturn response NotFound
+        if (!bookedToday.Any())
+        {
+            return NotFound(new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status404NotFound,
+                Status = HttpStatusCode.NotFound.ToString(),
+                Message = "Data Not Found"
+            });
+        }
+
+        //Join data bookedToday dan rooms
+
+        var bookedTodayDetails = (from boo in bookedToday
+                                  join roo in rooms on boo.RoomGuid equals roo.Guid
+                                  select new BookingTodayDto 
+                                  {
+                                      BookingGuid = boo.Guid,
+                                      RoomName = roo.Name,
+                                      Status = boo.Status.ToString(),
+                                      Floor = roo.Floor,
+                                      //Mendapatkan nama Employee melalui method GetNameByGuid
+                                      BookedBy = _employeeRepository.GetNameByGuid(boo.EmployeeGuid) 
+                                  }).ToList();
+
+        //Mengembalikan nilai berupa response OK dengan membawa data bookedTodayDetails
+        return Ok(new ResponseOKHandler<IEnumerable<BookingTodayDto>>(bookedTodayDetails));
+    }
+
+
+
+    //Endpoint dengan menggunakan method HTTP Get untuk medapatkan detail booking ruangan
+    [HttpGet("details")]
+    public IActionResult GetDetails()
+    {
+        //Mendapatkan seluruh data pada tabel untuk entitas Booking
+        var bookings = _bookingRepository.GetAll();
+
+        //Mengecek apakah variabel bookings memiliki data dan akan me-return response NotFound
+        if (!bookings.Any())
+        {
+            return NotFound(new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status404NotFound,
+                Status = HttpStatusCode.NotFound.ToString(),
+                Message = "Data Not Found"
+            });
+        }
+
+        //Mendaptakan seluruh data pada tabel untuk entitas Employee
+        var employees = _employeeRepository.GetAll();
+
+        //Mendaptakan seluruh data pada tabel untuk entitas Room
+        var rooms = _roomRepository.GetAll();
+
+        //Melakukan join pada data bookings, rooms, dan employees untuk mendapatkan data detail booking
+        var bookingDetails = from boo in bookings
+                             join roo in rooms on boo.RoomGuid equals roo.Guid
+                             join emp in employees on boo.EmployeeGuid equals emp.Guid
+                             select new BookingDetailDto
+                             {
+                                 Guid = boo.Guid,
+                                 BookedNik = emp.Nik,
+                                 BookedBy = emp.FirstName + " " + emp.LastName,
+                                 RoomName = roo.Name,
+                                 StartDate = boo.StartDate,
+                                 EndDate = boo.EndDate,
+                                 Status = boo.Status.ToString(),
+                                 Remarks = boo.Remarks
+                             };
+
+        //Mengembalikan nilai berupa objek ResponseOKHandler dengan argument <IEnumerable<BookingDetailDto>
+        return Ok(new ResponseOKHandler<IEnumerable<BookingDetailDto>>(bookingDetails));
+    }
+
+    //Endpoint dengan menggunakan method HTTP Get untuk medapatkan detail booking ruangan berdasarkan Booking GUID
+    [HttpGet("details-by-id")]
+    public IActionResult GetDetailsByGuid(Guid guid)
+    {
+        //Mendapatkan data Booking berdasarkan guid yang dinginkan
+        var booking = _bookingRepository.GetByGuid(guid);
+
+        //mengecek apakah data booking bernilai null dan akan mengembalikan response NotFound
+        if (booking is null)
+        {
+            return NotFound(new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status404NotFound,
+                Status = HttpStatusCode.NotFound.ToString(),
+                Message = "Data Not Found"
+            });
+        }
+
+        //Mendapatkan data employee berdasarkan Employee Guid
+        var employee = _employeeRepository.GetByGuid(booking.EmployeeGuid);
+
+        //Mendapatkan data Room berdasarkan Room Guid
+        var room = _roomRepository.GetByGuid(booking.RoomGuid);
+
+        //Instansiasi object Dto berdasarkan data yang ada
+        var bookingDetail = new BookingDetailDto
+        {
+            Guid = booking.Guid,
+            BookedBy = employee.FirstName + " " + employee.LastName,
+            BookedNik = employee.Nik,
+            StartDate = booking.StartDate,
+            EndDate = booking.EndDate,
+            RoomName = room.Name,
+            Status = booking.Status.ToString(),
+            Remarks = booking.Remarks
+        };
+        //Mengembalikan nilai berupa objek ResponseOKHandler dengan argument variabel bookingDetail
+        return Ok(new ResponseOKHandler<BookingDetailDto>(bookingDetail));
+    }
+
+
+    //End Point menggunakan method HTTP Get untuk mendapatkan data ruangan yang tersedia (tidak di-booking)
+    [HttpGet("available-rooms")]
+    public IActionResult GetAvailableRooms()
+    {
+        //Mendapatkan data Booking hari ini yang didapat dari method GetBookedToday
+        var bookedToday = _bookingRepository.GetBookedToday();
+
+        //Mendapatkan seluruh data Room 
+        var rooms = _roomRepository.GetAll();
+
+        //Mendapatkan rooms yang tersedia dengan menggunakan LINQ.
+        var availableRooms = rooms.Where(room => !bookedToday.Any(book => book.RoomGuid == room.Guid));
+
+
+        //Jika availableRooms tidak memiliki data maka akan mengembalikan response NotFound
+        if (!availableRooms.Any())
+        {
+            return NotFound(new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status404NotFound,
+                Status = HttpStatusCode.NotFound.ToString(),
+                Message = "Data Not Found"
+            });
+        }
+
+        //Operator sxplicit untuk konversi dari Room ke RoomDto dan disimpan pada variabel data
+        var data = availableRooms.Select(x => (RoomDto)x);
+        return Ok(new ResponseOKHandler<IEnumerable<RoomDto>>(data));
+    }
+
+    //End Point untuk mendapatka durasi booking pada tiap data Booking
+    [HttpGet("booking-length")]
+    public IActionResult GetBookingLenght()
+    {
+        //Mendapatkan seluruh data entitas Booking 
+        var bookings = _bookingRepository.GetAll();
+
+        //Mendapatkan seluruh data entitas Room
+        var rooms = _roomRepository.GetAll();
+
+        //Mengecek apakah terdapat data pada variabel rooms dan mengembalikan response NotFound
+        if (!rooms.Any())
+        {
+            return NotFound(new ResponseErrorHandler
+            {
+                Code = StatusCodes.Status404NotFound,
+                Status = HttpStatusCode.NotFound.ToString(),
+                Message = "Data Not Found"
+            });
+        }
+
+       ;
+        var bookingLength = from boo in bookings
+                            join roo in rooms on boo.RoomGuid equals roo.Guid
+                            select new BookingLengthDto
+                            {
+                                RoomGuid = roo.Guid,
+                                RoomName = roo.Name,
+                                BookingLength = GenerateHandler.GenerateDayLength(boo.StartDate, boo.EndDate)
+                            };
+
+
+
+        return Ok(new ResponseOKHandler<IEnumerable<BookingLengthDto>>(bookingLength));
     }
 
     /*
@@ -176,7 +376,7 @@ public class BookingController : ControllerBase
 
             //Menyimpan data dari parameter ke dalam objek toUpdate, serta dilakukan mapping secara implisit
             Booking toUpdate = bookingDto;
-        
+
             //Inisialiasi nilai CreatedDate agar tidak ada perubahan dari data awal
             toUpdate.CreatedDate = bookingByGuid.CreatedDate;
 

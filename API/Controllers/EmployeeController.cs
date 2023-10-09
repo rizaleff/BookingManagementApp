@@ -6,6 +6,7 @@ using API.DTOs.Employees;
 using API.DTOs.Universities;
 using API.Models;
 using API.Utilities.Handlers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
@@ -24,16 +25,26 @@ public class EmployeeController : ControllerBase
     private readonly IEducationRepository _educationRepository;
     private readonly IUniversityRepository _universityRepository;
     private readonly IAccountRepository _accountRepository;
+    private readonly IAccountRoleRepository _accountRoleRepository;
+    private readonly IRoleRepository _roleRepository;
 
-    public EmployeeController(IEmployeeRepository employeeRepository, IEducationRepository educationRepository, IUniversityRepository universityRepository, IAccountRepository accountRepository)
+    public EmployeeController(IEmployeeRepository employeeRepository, 
+                            IEducationRepository educationRepository, 
+                            IUniversityRepository universityRepository, 
+                            IAccountRepository accountRepository,
+                            IAccountRoleRepository accountRoleRepository,
+                            IRoleRepository roleRepository)
     {
         _employeeRepository = employeeRepository;
         _educationRepository = educationRepository;
         _universityRepository = universityRepository;
         _accountRepository = accountRepository;
+        _accountRoleRepository = accountRoleRepository;
+        _roleRepository = roleRepository;
     }
 
     [HttpGet("details")]
+    [Authorize(Roles = "manager")]
     public IActionResult GetDetails()
     {
         var employees = _employeeRepository.GetAll();
@@ -73,85 +84,7 @@ public class EmployeeController : ControllerBase
     }
 
 
-    [HttpPost("Register")]
-    public IActionResult Register(RegisterEmployeeDto registerEmployeeDto)
-    {
-
-        try
-        {
-            using (var transaction = new TransactionScope())
-            {
-                Guid univGuid = _universityRepository.UniversityGuidByName(registerEmployeeDto.UniversityName);
-                if (univGuid == Guid.Empty)
-                {
-                    //Mapping secara implisit pada createUniversityDto untuk dijadikan objek University
-                    University toCreateUniv = new CreateUniversityDto
-                    {
-                        Code = registerEmployeeDto.UniversityCode,
-                        Name = registerEmployeeDto.UniversityName
-                    };
-                    var resultUniversity = _universityRepository.Create(toCreateUniv);
-                    univGuid = resultUniversity.Guid;
-                }
-
-                Employee toCreateEmployee = new CreateEmployeeDto
-                {
-                    FirstName = registerEmployeeDto.FirstName,
-                    LastName = registerEmployeeDto.LastName,
-                    BirthDate = registerEmployeeDto.BirthDate,
-                    Email = registerEmployeeDto.Email,
-                    Gender = registerEmployeeDto.Gender,
-                    HiringDate = registerEmployeeDto.HiringDate,
-                    PhoneNumber = registerEmployeeDto.PhoneNumber
-                };
-
-                toCreateEmployee.Nik = GenerateHandler.GenerateNik(_employeeRepository.GetLastNik());
-
-                var resultEmployee = _employeeRepository.Create(toCreateEmployee);
-
-                Education toCreateEducation = new CreateEducationDto
-                {
-                    Degree = registerEmployeeDto.Degree,
-                    Gpa = registerEmployeeDto.Gpa,
-                    Major = registerEmployeeDto.Major,
-                    Guid = resultEmployee.Guid,
-                    UniversityGuid = univGuid
-                };
-
-                _educationRepository.Create(toCreateEducation);
-
-
-                Account toCreateAccount = new CreateAccountDto
-                {
-                    Guid = resultEmployee.Guid,
-                    Password = registerEmployeeDto.Password
-
-                };
-
-
-
-                toCreateAccount.Password = HashingHandler.HashPassword(toCreateAccount.Password);
-
-                var resultAccount = _accountRepository.Create(toCreateAccount);
-
-                transaction.Complete();
-                return Ok("Sukses");
-            };
-
-            
-        }
-        catch (ExceptionHandler ex)
-        {
-            //Mengembalikan nilai dengan response body berupa objek ResponseErrorHandler
-            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
-            {
-                Code = StatusCodes.Status500InternalServerError,//Inisialisasi atribut Code dengan nilai 500
-                Status = HttpStatusCode.InternalServerError.ToString(), //Inisialisasi atribut Status dengan nilai InternalServerError
-                Message = "Failed to Create Data", //Inisialisasi nilai atribut Message
-                Error = ex.Message  //Inisialisasi nilai atribut Error berupa Message dari ExceptionHandler
-            });
-        }
-    }
+    
 
     /*
      *<summary>request HTTP GET untuk mendpatkan data dari semua Employee</summary>
