@@ -1,7 +1,7 @@
 ﻿namespace API.DTOs.Bookings;
 /*
  * Class : BookingTodayDto
- * Mendefinisikan properties yang dibutuhkan
+ * Mendefinisikan properties yang dibutuhkan untuk data durasi booking
  */
 public class BookingLengthDto
 {
@@ -9,3 +9,4 @@ public class BookingLengthDto
     public string RoomName { get; set;}
     public int BookingLength {  get; set;}
 }
+

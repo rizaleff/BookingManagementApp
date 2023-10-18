@@ -45,7 +45,7 @@ public class EmployeeValidator : AbstractValidator<EmployeeDto>
         RuleFor(e => e.PhoneNumber)
             .NotEmpty()
             .MinimumLength(10) //Atribut harus memiliki panjang minimal 10 Karakter
-            .MaximumLength(20) //Atribut harus memiliki panjang maksimal 20 karakter
-            .Matches("^[0-9]$"); ///Atribut hanya boleh berupa angka
+            .MaximumLength(20); //Atribut harus memiliki panjang maksimal 20 karakter
+            //.Matches("^[0-9]$"); ///Atribut hanya boleh berupa angka
     }
 }

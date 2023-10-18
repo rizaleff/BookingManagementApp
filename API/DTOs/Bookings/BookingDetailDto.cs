@@ -1,8 +1,7 @@
 ﻿namespace API.DTOs.Bookings;
 /*
  * Class : BookingTodayDto
- * Mendefinisikan properties yang disajikan
- * Untuk mengetahui room apa saja yang digunakan hari ini
+ * Mendefinisikan properties yang dibutuhkan untuk Detail Booking
  */
 public class BookingDetailDto
 {
@@ -15,3 +14,5 @@ public class BookingDetailDto
     public string Status { get; set; }
     public string Remarks { get; set; }
 }
+
+

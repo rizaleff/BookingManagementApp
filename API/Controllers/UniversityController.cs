@@ -11,7 +11,7 @@ namespace API.Controllers;
 
 [ApiController] //Menandadakan bahwa kelas ini merupakan sebuah controller API
 [Route("api/[controller]")] //format route dari tiap endpoint pada controller ini
-[Authorize]
+//[Authorize]
 
 //Deklarasi kelas UniversityController yang merupakan turunan dari kelas ControllerBase
 public class UniversityController : ControllerBase

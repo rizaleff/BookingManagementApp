@@ -1,6 +1,8 @@
 
-﻿using Microsoft.EntityFrameworkCore;
-﻿using System.ComponentModel.DataAnnotations.Schema;
+using API.Utilities.Enums;
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 
 namespace API.Models
@@ -17,10 +19,11 @@ namespace API.Models
         [Column("birth_date")]
         public DateTime BirthDate { get; set; }
         [Column("gender")]
-        public int Gender {  get; set; }
+        public GenderLevel Gender {  get; set; }
         [Column("hiring_date")]
         public DateTime HiringDate { get; set; }
 
+        [Required]
         [Column("email", TypeName ="nvarchar(100)")]
 
         public string Email { get; set; }

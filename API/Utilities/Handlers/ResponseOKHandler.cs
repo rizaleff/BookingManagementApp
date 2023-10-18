@@ -22,7 +22,7 @@ public class ResponseOKHandler<TEntity>
     {
         Code = StatusCodes.Status200OK; //Inisialiasi nilai atribut Code dengan nlai status code 200
         Status = HttpStatusCode.OK.ToString(); //Inisialiasi nilai atribut Status dengan nlai Ok
-        Message = "Success to Retrieve Data"; //Inisialiasi nilai atribut Message
+        Message = "Success"; //Inisialiasi nilai atribut Message
         Data = data; //Inisialisasi nilai atribut Data berdasarkan parameter
     }
 
@@ -35,6 +35,12 @@ public class ResponseOKHandler<TEntity>
         Code = StatusCodes.Status200OK; //Inisialiasi nilai atribut Code dengan nlai status code 200
         Status = HttpStatusCode.OK.ToString(); //Inisialiasi nilai atribut Status dengan nlai Ok
         Message = message; //Inisialiasi nilai atribut Message
+    }
+    public ResponseOKHandler()
+    {
+        Code = StatusCodes.Status200OK; //Inisialiasi nilai atribut Code dengan nlai status code 200
+        Status = HttpStatusCode.OK.ToString(); //Inisialiasi nilai atribut Status dengan nlai Ok
+       
     }
 
     /* Constructor ResponseOKHandler(string message, TEntity data)

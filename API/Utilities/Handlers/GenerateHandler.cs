@@ -8,7 +8,7 @@ public class GenerateHandler
      * <returns>Bernilai string yang merepresentasikan NIK baru</returns>
      */
     public static string GenerateNik(string lastNik)
-    {
+        {
         //Jika lastNik bernilai empty string maka akan mengembalikan nilai "111111"
         if (lastNik == "") return "111111";
 

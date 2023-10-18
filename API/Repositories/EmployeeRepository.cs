@@ -42,7 +42,7 @@ public class EmployeeRepository : GeneralRepository<Employee>, IEmployeeReposito
         return employee;
     }
 
-    public string GetNameByGuid(Guid guid)
+    public string? GetNameByGuid(Guid guid)
     {
         return _context.Set<Employee>().Where(e => e.Guid == guid)
                                 .Select(e => e.FirstName + " " + e.LastName)

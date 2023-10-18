@@ -44,7 +44,7 @@ public class EmployeeController : ControllerBase
     }
 
     [HttpGet("details")]
-    [Authorize(Roles = "manager")]
+    [AllowAnonymous]
     public IActionResult GetDetails()
     {
         var employees = _employeeRepository.GetAll();
@@ -210,7 +210,7 @@ public class EmployeeController : ControllerBase
         }
         catch (ExceptionHandler ex)
         {
-            //Mengembalikan nilai berupa Respon Status 500 dan objek ResponseErrorHandler
+            //Mengembalikan nil ai berupa Respon Status 500 dan objek ResponseErrorHandler
             return StatusCode(StatusCodes.Status500InternalServerError, new ResponseErrorHandler
             {
                 Code = StatusCodes.Status500InternalServerError, //Inisialiasi atribut Code dengan nilai 500
