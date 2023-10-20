@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <Folder Include="Views\NewFolder\" />
-    <Folder Include="wwwroot\plus-admin\assets\js\NewFolder\" />
   </ItemGroup>
 
   <ItemGroup>

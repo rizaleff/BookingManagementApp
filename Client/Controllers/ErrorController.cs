@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace Client.Controllers
 {
     [Authorize]
-    public class LatihanController : Controller
+    public class ErrorController : Controller
     {
 
         public IActionResult Index()
@@ -15,6 +15,25 @@ namespace Client.Controllers
         }
 
         public IActionResult Privacy()
+        {
+            return View();
+        }
+        [AllowAnonymous]
+        [HttpGet("/Unauthorized")]
+        public IActionResult Unauthorized()
+        {
+            return View("401");
+        }
+        [AllowAnonymous]
+        [HttpGet("/NotFound")]
+        public IActionResult Notfound()
+        {
+            return View();
+        }
+
+        [AllowAnonymous]
+        [Route("/Forbidden")]
+        public IActionResult Forbidden()
         {
             return View();
         }

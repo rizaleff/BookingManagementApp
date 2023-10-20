@@ -12,5 +12,6 @@ public class AccountRepository : GeneralRepository<Account>, IAccountRepository
         return _context.Accounts.Where(e => e.Guid == guid)
             .Select(e => e.Password).FirstOrDefault();
 
+
     }
 }

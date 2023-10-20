@@ -8,7 +8,7 @@ namespace Client.Repositories
 {
     public class EmployeeRepository : GeneralRepository<Employee, Guid>, IEmployeeRepository
     {
-        public EmployeeRepository(string request = "Employee/") : base(request)
+        public EmployeeRepository(string request = "Employee/") :   base(request)
         {
 
         }

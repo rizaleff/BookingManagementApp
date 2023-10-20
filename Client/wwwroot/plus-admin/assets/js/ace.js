@@ -1,7 +1,10 @@
-(function($) {
-  'use strict';
-  var editor = ace.edit("aceExample");
-  editor.setTheme("ace/theme/chaos");
-  editor.getSession().setMode("ace/mode/javascript");
-  document.getElementById('aceExample').style.fontSize = '1rem';
-})(jQuery);
+function setActive(element) {
+    // Remove 'active' class from all list items
+    var listItems = document.querySelectorAll('.sidebar ul li');
+    listItems.forEach(function (li) {
+        li.classList.remove('active');
+    });
+
+    // Add 'active' class to the clicked list item
+    element.parentElement.classList.add('active');
+}

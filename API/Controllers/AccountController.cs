@@ -287,7 +287,7 @@ public class AccountController : ControllerBase
     public IActionResult Login(LoginDto loginDto)
     {
         var employeeByEmail = _employeeRepository.GetByEmail(loginDto.Email);
-        if (employeeByEmail.Guid == Guid.Empty)
+        if (employeeByEmail is null)
         {
             return NotFound(new ResponseErrorHandler
             {

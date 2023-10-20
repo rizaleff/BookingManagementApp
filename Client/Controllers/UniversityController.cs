@@ -1,11 +1,14 @@
 ﻿using API.DTOs.Employees;
 using API.Models;
 using Client.Contracts;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Client.Controllers
 {
+
+    [Authorize(Roles = "user")]
     public class UniversityController : Controller
     {
         private readonly IUniversityRepository repository;
@@ -21,7 +24,7 @@ namespace Client.Controllers
         }
         public async Task<JsonResult> GetAllUniversity()
         {
-            var result = await repository.Get();
+            var result = await repository.Get();    
             return Json(result.Data);
         }
 
